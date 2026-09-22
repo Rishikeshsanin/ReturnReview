@@ -6,23 +6,26 @@ from app.models.database_models import ReturnCase
 from app.services.evidence_service import build_visual_evidence
 from app.services.policy_service import retrieve_return_policy
 from app.services.llm_service import deterministic_review, SYSTEM_PROMPT
+from app.services.review_guard import validate_review
 from app.utils.config import get_settings
 
 settings = get_settings()
 
 
 def run_review_agent(db: Session, case: ReturnCase) -> tuple[ReviewOutput, dict]:
-    """Bounded read-only Gemini tool workflow."""
+    """Bounded read-only Gemini tool workflow followed by a deterministic grounding guard."""
     evidence = build_visual_evidence(db, case)
     issue = evidence.findings[0].defect_type if evidence.findings else None
     policy = retrieve_return_policy(case.product_category, issue)
 
     if not settings.llm_enabled or not settings.gemini_api_key:
-        return deterministic_review(evidence, policy, case.customer_reason), {
+        review = deterministic_review(evidence, policy, case.customer_reason)
+        return validate_review(review, evidence, policy), {
             "provider": "deterministic",
             "model": "fallback-v1",
             "latency_ms": 0.0,
             "tool_calls": [],
+            "grounding_guard": "passed",
         }
 
     from google import genai
@@ -70,17 +73,20 @@ def run_review_agent(db: Session, case: ReturnCase) -> tuple[ReviewOutput, dict]
             ),
         )
         parsed = response.parsed if response.parsed is not None else ReviewOutput.model_validate_json(response.text)
-        review = ReviewOutput.model_validate(parsed)
+        review = validate_review(ReviewOutput.model_validate(parsed), evidence, policy)
         return review, {
             "provider": "gemini",
             "model": settings.gemini_model,
             "latency_ms": (perf_counter() - started) * 1000,
             "tool_calls": tool_log,
+            "grounding_guard": "flagged" if review.unsupported_claims_detected else "passed",
         }
     except Exception:
-        return deterministic_review(evidence, policy, case.customer_reason), {
+        fallback = validate_review(deterministic_review(evidence, policy, case.customer_reason), evidence, policy)
+        return fallback, {
             "provider": "deterministic",
             "model": "fallback-after-agent-error",
             "latency_ms": (perf_counter() - started) * 1000,
             "tool_calls": tool_log,
+            "grounding_guard": "passed",
         }
