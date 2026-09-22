@@ -19,23 +19,22 @@ Verified configuration:
 - restart policy: on failure
 - watch paths limited to backend/data/container files
 - exact hosted frontend origin included in CORS
+- current deployment healthcheck returned HTTP 200
 
-### Persistent data
+### Current persistence status
 
-A dedicated **1 GB ReturnReview-only Railway volume** is mounted at:
-
-```text
-/data
-```
-
-Production persistence:
+The backend currently uses ordinary local SQLite/file storage inside its Railway container:
 
 ```text
-RETURNREVIEW_DATABASE_URL=sqlite:////data/returnreview.db
-RETURNREVIEW_STORAGE_DIR=/data/storage
+RETURNREVIEW_DATABASE_URL=sqlite:///./returnreview.db
+RETURNREVIEW_STORAGE_DIR=./storage
 ```
 
-The running container was inspected and contains `/data/returnreview.db` and `/data/storage`.
+This is **not claimed as persistent across redeploys**.
+
+A 1 GB Railway volume was staged and committed during deployment work, but Railway's authoritative service configuration still reported `hasVolume=false` afterward. The project therefore treats hosted persistence as unfinished rather than pretending the volume is active.
+
+The shared Supabase Project Hub remains untouched except for read-only inspection.
 
 ### Current feature flags
 
@@ -60,12 +59,11 @@ Verified configuration:
 - Next.js standalone production output
 - healthcheck: `/`
 - backend URL: `https://returnreview-api-production.up.railway.app`
-
-Railway's container healthcheck succeeded on the deployed web image.
+- deployed container healthcheck succeeded
 
 ## Preferred optional frontend target — Vercel
 
-Vercel remains a suitable final frontend alternative. The connected automation can inspect existing projects but did not expose a safe create-new-project action, so no unrelated Vercel project was touched.
+Vercel remains a suitable frontend alternative. The connected automation can inspect existing projects but did not expose a safe create-new-project action, so no unrelated Vercel project was touched.
 
 To switch later:
 1. Import `Rishikeshsanin/ReturnReview` as a **new** Vercel project.
