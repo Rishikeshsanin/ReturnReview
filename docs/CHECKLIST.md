@@ -1,0 +1,30 @@
+# Development Checklist
+
+- [x] Repository initialized
+- [x] Safe `develop` branch created
+- [x] Next.js frontend skeleton
+- [x] FastAPI backend skeleton
+- [x] Local SQLite persistence
+- [x] Case creation/list/detail
+- [x] Validated multi-image upload
+- [x] Structured policy lookup
+- [x] Structured evidence schema
+- [x] Gemini adapter with deterministic fallback
+- [x] Human decision endpoint
+- [x] Audit records
+- [x] CV training/evaluation scripts
+- [x] Refuse fake CV result when checkpoint is absent
+- [ ] Collect pilot images
+- [ ] Annotate pilot masks
+- [ ] Train first segmentation checkpoint
+- [ ] Calibrate OpenCLIP product verification
+- [ ] Build defect prototype bank + threshold calibration
+- [ ] Save/render segmentation masks
+- [ ] Held-out CV metrics
+- [ ] Fixed LLM evaluation set
+- [ ] Real LLM groundedness/agreement metrics
+- [ ] Read shared Supabase README before any integration
+- [ ] Production database/storage integration if safe
+- [ ] Deploy frontend
+- [ ] Deploy backend
+- [ ] Final end-to-end QA
