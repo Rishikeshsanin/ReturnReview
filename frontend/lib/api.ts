@@ -1,4 +1,6 @@
-export const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+export const API =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  "https://returnreview-api-production.up.railway.app";
 
 export async function api<T>(path:string, init?:RequestInit):Promise<T>{
   const res = await fetch(`${API}${path}`, {
