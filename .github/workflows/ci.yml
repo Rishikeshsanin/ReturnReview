@@ -49,3 +49,19 @@ jobs:
           done
           docker logs returnreview-ci
           exit 1
+
+  frontend-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t returnreview-frontend ./frontend
+      - run: docker run -d --name returnreview-web -p 3000:3000 -e PORT=3000 returnreview-frontend
+      - run: |
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs returnreview-web
+          exit 1
