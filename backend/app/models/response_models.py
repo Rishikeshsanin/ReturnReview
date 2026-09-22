@@ -13,13 +13,22 @@ class DefectEvidence(BaseModel):
     affected_area_percent: float | None = None
 
 
+class AggregatedDefect(BaseModel):
+    defect_type: str
+    max_confidence: float = Field(ge=0, le=1)
+    supporting_image_ids: list[str] = Field(default_factory=list)
+    finding_ids: list[str] = Field(default_factory=list)
+    max_affected_area_percent: float | None = None
+
+
 class VisualEvidence(BaseModel):
     case_id: str
     product_category: str
     category_verified: bool
     verification_score: float | None
-    findings: list[DefectEvidence]
-    uncertainties: list[str] = []
+    findings: list[DefectEvidence] = Field(default_factory=list)
+    aggregated_defects: list[AggregatedDefect] = Field(default_factory=list)
+    uncertainties: list[str] = Field(default_factory=list)
 
 
 class PolicyReference(BaseModel):
@@ -31,7 +40,7 @@ class PolicyReference(BaseModel):
 
 class ReviewOutput(BaseModel):
     case_summary: str
-    visual_findings: list[dict]
+    visual_findings: list[dict] = Field(default_factory=list)
     policy_reference: PolicyReference | None
     review_status: str
     recommended_action: Literal[
@@ -41,8 +50,8 @@ class ReviewOutput(BaseModel):
         "policy_mismatch",
         "insufficient_evidence",
     ]
-    missing_information: list[str] = []
-    uncertainties: list[str] = []
+    missing_information: list[str] = Field(default_factory=list)
+    uncertainties: list[str] = Field(default_factory=list)
     unsupported_claims_detected: bool = False
 
 
