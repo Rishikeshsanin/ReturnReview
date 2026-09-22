@@ -4,18 +4,29 @@
 
 ReturnReview is an evidence-first semester project for **Fundamentals of Computer Vision** and **Working with Large Language Models**. Computer vision localizes visible damage; policy retrieval supplies factual rules; an LLM prepares a grounded review; a human reviewer makes the final decision.
 
+## Live deployment
+
+- Web UI: `https://returnreview-web-production.up.railway.app`
+- API: `https://returnreview-api-production.up.railway.app`
+- API health: `https://returnreview-api-production.up.railway.app/health`
+
+Both services are isolated inside the dedicated Railway **ReturnReview** project. The backend uses a ReturnReview-only persistent volume mounted at `/data`.
+
+> **Current AI status:** the hosted product shell is live, but project-specific CV inference and Gemini are intentionally disabled until the real pilot dataset/checkpoint/prototype bank and Gemini API key are available. The API refuses to fabricate CV evidence.
+
 ## MVP scope
 
 - One category: **cardboard shipping boxes**
 - Visible external defects: `tear`, `crushed_corner`, `dent_or_crush`, `unknown`
 - Multi-angle JPEG/PNG/WebP uploads
 - Real binary damage segmentation using a fine-tuned YOLO segmentation checkpoint
-- OpenCLIP category verification and few-shot defect prototype matching
+- OpenCLIP category verification and prototype-based few-shot defect recognition
+- Conservative multi-view evidence aggregation
 - Structured evidence + policy retrieval
-- Gemini tool-calling review agent with deterministic fallback
+- Gemini tool-calling review agent with deterministic fallback + grounding guard
 - Human approve/reject/request-more-evidence
-- Audit/history-ready persistence
-- Real evaluation artifact endpoint (never fabricated)
+- Reviewer edits, notes and audit history
+- Real evaluation pipelines; no fabricated metrics
 
 ## Core principle
 
@@ -27,15 +38,34 @@ ReturnReview is an evidence-first semester project for **Fundamentals of Compute
 ReturnReview/
 ├── frontend/                 # Next.js + TypeScript
 ├── backend/                  # FastAPI + SQLAlchemy
-├── data/                     # policies + future dataset metadata
-├── scripts/                  # training/evaluation/prototype tools
-├── docs/                     # architecture, ADRs, dataset protocol
+├── data/                     # structured policies
+├── scripts/                  # training, calibration and evaluation
+├── docs/                     # architecture, API, model, security, demo
+├── Dockerfile                # backend production container
 └── .env.example
 ```
 
 ## Current development status
 
-The application foundation, case workflow, upload validation, local persistence, policy lookup, structured review, human-decision flow, audit events, CV adapter, prototype tooling and training/evaluation entry points are implemented. **The app intentionally refuses to present a real CV result until a trained checkpoint and prototype bank exist.** Pilot image collection/annotation is the next hard dependency.
+Implemented and tested:
+- case creation/history/detail
+- validated 2–4 image upload flow
+- persistent hosted SQLite + file storage
+- YOLO segmentation adapter
+- OpenCLIP category verification + few-shot adapter
+- segmentation-overlay generation
+- structured visual evidence + multi-view aggregation
+- bounded Gemini tool workflow + deterministic fallback
+- deterministic unsupported-claim grounding guard
+- policy retrieval
+- human review/edit/decision flow
+- audit timeline and request tracing
+- real IoU/Dice/F1/FAR/FRR/review-evaluation scripts
+- backend + frontend production containers
+- CI for backend tests, frontend build and both container healthchecks
+- live Railway frontend/backend deployment
+
+**The next hard dependency is real pilot imagery.**
 
 See [`docs/CHECKLIST.md`](docs/CHECKLIST.md).
 
@@ -58,9 +88,6 @@ For actual CV training/inference:
 pip install -r requirements-cv.txt
 ```
 
-Backend health: `http://localhost:8000/health`  
-OpenAPI: `http://localhost:8000/docs`
-
 ### Frontend
 
 ```bash
@@ -69,54 +96,51 @@ npm install
 npm run dev
 ```
 
-Frontend: `http://localhost:3000`
-
-### Environment
-
-Copy `.env.example` to `.env`. Never commit secrets.
-
-Gemini remains disabled until these are set server-side:
-
-```text
-RETURNREVIEW_GEMINI_API_KEY=...
-RETURNREVIEW_GEMINI_MODEL=gemini-3.8-flash
-RETURNREVIEW_LLM_ENABLED=true
-```
+Copy `.env.example` to `.env` where appropriate. Never commit secrets.
 
 ## CV workflow
 
 ```text
 image validation
-  -> OpenCLIP category prototype verification
+  -> OpenCLIP category verification
   -> YOLO11n-seg binary damage localization
-  -> damage crop embeddings
+  -> damage-crop embeddings
   -> few-shot prototype matching
+  -> conservative multi-view aggregation
   -> structured evidence
 ```
 
-The CV path is intentionally project-specific. It does not call Gemini for damage detection.
+The CV path does **not** use Gemini for visual detection.
 
 ## LLM workflow
 
-The Gemini agent has only read tools for trusted case context, stored visual evidence and the relevant policy. Database writes and the final reviewer decision remain deterministic backend actions.
+The review agent can read trusted case context, stored CV evidence and the applicable policy. It cannot approve/reject a return, write arbitrary data, infer fraud/intent/causality or invent visual findings. A deterministic grounding guard validates the generated draft before it reaches the reviewer.
 
 ## Data safety
 
-ReturnReview currently uses **local SQLite and local file storage**. It does **not** connect to Supabase yet. Because Supabase is shared with unrelated applications, no schema/table/bucket change will be made until the Project Hub Supabase README and current shared schema are inspected read-only and a safe namespace is established.
+The shared Supabase **Projects Hub** was inspected **read-only**. ReturnReview did not create or modify any Hub schema/table/bucket/data. The repository now contains the required `AGENTS.md` and `SUPABASE_HUB_RULES.md` safety contracts for any future integration.
+
+Hosted persistence currently stays isolated on a dedicated Railway volume instead of using shared Supabase.
 
 ## Limitations
 
-- One product category initially
-- External visible damage only
-- Segmentation requires project-specific labelled data
-- Image quality affects confidence
-- Unseen/ambiguous defects remain `unknown`
-- Internal damage, fraud, intent, authenticity and causal responsibility are not inferred
-- Human reviewer owns the final decision
+- one product category initially
+- external visible damage only
+- CV checkpoint still requires project-specific labelled data
+- image quality affects confidence
+- unseen/ambiguous defects remain `unknown`
+- no internal-damage, fraud, intent, authenticity or causal-responsibility inference
+- human reviewer owns the final decision
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Architecture decisions](docs/DECISIONS.md)
-- [Pilot dataset protocol](docs/DATASET.md)
+- [API](docs/API.md)
+- [Dataset protocol](docs/DATASET.md)
+- [Evaluation](docs/EVALUATION.md)
+- [Model card](docs/MODEL_CARD.md)
+- [Security](docs/SECURITY.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Demo runbook](docs/DEMO.md)
 - [Development checklist](docs/CHECKLIST.md)
