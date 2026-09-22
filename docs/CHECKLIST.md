@@ -4,7 +4,7 @@
 - [x] Repository initialized and protected by branch/PR workflow
 - [x] Next.js frontend and responsive evidence-focused UI
 - [x] FastAPI backend + OpenAPI
-- [x] Persistent SQLite + file storage on ReturnReview-only Railway volume
+- [x] Local SQLite/file-storage implementation
 - [x] Case creation/list/detail/history
 - [x] Validated 2–4 image workflow
 - [x] Structured policy lookup
@@ -55,6 +55,12 @@
 - [ ] Run real Gemini tool-calling cases
 - [ ] Build fixed manually reviewed LLM evaluation set
 - [ ] Measure groundedness/unsupported claims/policy correctness/agreement/correction rate/latency
+
+## Persistence
+- [ ] Choose final persistent hosted storage
+- [ ] If using Project Hub, register `return_review` only after another read-only safety check
+- [ ] Create only isolated `return_review` resources with RLS; never touch other app schemas
+- [ ] Verify persistence across redeploys
 
 ## Final submission
 - [ ] Full real-data E2E QA
