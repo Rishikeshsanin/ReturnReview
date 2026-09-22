@@ -10,9 +10,11 @@ ReturnReview is an evidence-first semester project for **Fundamentals of Compute
 - API: `https://returnreview-api-production.up.railway.app`
 - API health: `https://returnreview-api-production.up.railway.app/health`
 
-Both services are isolated inside the dedicated Railway **ReturnReview** project. The backend uses a ReturnReview-only persistent volume mounted at `/data`.
+Both services are isolated inside the dedicated Railway **ReturnReview** project.
 
 > **Current AI status:** the hosted product shell is live, but project-specific CV inference and Gemini are intentionally disabled until the real pilot dataset/checkpoint/prototype bank and Gemini API key are available. The API refuses to fabricate CV evidence.
+
+> **Current persistence status:** hosted SQLite/uploads are temporary container storage. A Railway volume was tested but Railway did not expose it as an active mount after commit, so the project does **not** claim persistent hosted case storage yet.
 
 ## MVP scope
 
@@ -50,7 +52,6 @@ ReturnReview/
 Implemented and tested:
 - case creation/history/detail
 - validated 2–4 image upload flow
-- persistent hosted SQLite + file storage
 - YOLO segmentation adapter
 - OpenCLIP category verification + few-shot adapter
 - segmentation-overlay generation
@@ -118,15 +119,14 @@ The review agent can read trusted case context, stored CV evidence and the appli
 
 ## Data safety
 
-The shared Supabase **Projects Hub** was inspected **read-only**. ReturnReview did not create or modify any Hub schema/table/bucket/data. The repository now contains the required `AGENTS.md` and `SUPABASE_HUB_RULES.md` safety contracts for any future integration.
-
-Hosted persistence currently stays isolated on a dedicated Railway volume instead of using shared Supabase.
+The shared Supabase **Projects Hub** was inspected **read-only**. ReturnReview did not create or modify any Hub schema/table/bucket/data. The repository contains the required `AGENTS.md` and `SUPABASE_HUB_RULES.md` safety contracts for any future integration.
 
 ## Limitations
 
 - one product category initially
 - external visible damage only
 - CV checkpoint still requires project-specific labelled data
+- hosted case persistence is not finalized
 - image quality affects confidence
 - unseen/ambiguous defects remain `unknown`
 - no internal-damage, fraud, intent, authenticity or causal-responsibility inference
