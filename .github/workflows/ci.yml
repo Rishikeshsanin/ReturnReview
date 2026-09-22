@@ -18,6 +18,8 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: PYTHONPATH=. pytest -q
+      - name: Syntax-check project scripts
+        run: python -m py_compile ../scripts/*.py
 
   frontend:
     runs-on: ubuntu-latest

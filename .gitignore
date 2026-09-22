@@ -12,6 +12,13 @@ venv/
 *.db
 backend/storage/
 backend/models/checkpoints/
+backend/models/*.npz
+
+# private/raw project data
+data/raw/
+data/dataset/
+data/pilot/
+*.zip
 
 # Node
 node_modules/
