@@ -1,0 +1,17 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+frontend/node_modules
+frontend/.next
+backend/.venv
+backend/__pycache__
+backend/.pytest_cache
+backend/storage
+backend/*.db
+artifacts
+runs
+*.pyc
+.DS_Store
+Thumbs.db
