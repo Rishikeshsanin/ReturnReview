@@ -1,0 +1,29 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.db
+backend/storage/
+backend/models/checkpoints/
+
+# Node
+node_modules/
+.next/
+out/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# generated evaluation/model artifacts
+artifacts/
+runs/

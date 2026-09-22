@@ -1,0 +1,44 @@
+from functools import lru_cache
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="RETURNREVIEW_",
+        env_file=(".env", "../.env"),
+        extra="ignore",
+    )
+
+    env: str = "development"
+    database_url: str = "sqlite:///./returnreview.db"
+    storage_dir: str = "./storage"
+    allowed_origins: str = "http://localhost:3000"
+    max_upload_mb: int = 10
+    demo_mode: bool = True
+
+    cv_model_path: str = "./models/checkpoints/best.pt"
+    cv_model_version: str = "untrained"
+    clip_model: str = "ViT-B-32"
+    clip_pretrained: str = "laion2b_s34b_b79k"
+    prototype_bank_path: str = "./models/prototypes.npz"
+    category_similarity_threshold: float = 0.72
+    defect_similarity_threshold: float = 0.66
+    defect_margin_threshold: float = 0.03
+
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-3.8-flash"
+    llm_enabled: bool = False
+
+    @property
+    def storage_path(self) -> Path:
+        return Path(self.storage_dir).resolve()
+
+    @property
+    def origins(self) -> list[str]:
+        return [x.strip() for x in self.allowed_origins.split(",") if x.strip()]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

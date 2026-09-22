@@ -1,0 +1,5 @@
+-r requirements.txt
+torch>=2.5,<3
+torchvision>=0.20,<1
+ultralytics>=8.3,<9
+open-clip-torch>=2.26,<3
