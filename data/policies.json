@@ -1,0 +1,11 @@
+[
+  {
+    "policy_id": "RET-CBX-001",
+    "name": "Visible Transit Damage - Cardboard Packaging",
+    "category": "cardboard_box",
+    "version": "1.0",
+    "section": "Visible external damage",
+    "applies_to": ["tear", "crushed_corner", "dent_or_crush", "unknown"],
+    "text": "Visible external damage documented by photographs may be submitted for manual return review. The inspection system may summarize visible evidence but a human reviewer makes the final decision. Additional photographs may be requested when evidence is incomplete or uncertain."
+  }
+]
