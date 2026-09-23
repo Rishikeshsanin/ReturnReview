@@ -50,7 +50,7 @@ The connected automation cannot set a database-role password. Do this manually w
 2. In Railway → ReturnReview → `returnreview-api` → Variables, set:
    - `RETURNREVIEW_DATABASE_SCHEMA=return_review`
    - `RETURNREVIEW_DATABASE_URL=<dedicated return_review_backend PostgreSQL URL>`
-3. Use SSL and the Supavisor **session pooler** (port 5432) if the Railway network needs IPv4.
+3. Prefer the direct Supabase Postgres host over IPv6; outbound IPv6 is enabled only on `returnreview-api`. Use the Supavisor **session pooler** (port 5432) only as the IPv4 fallback.
 4. Do not use the `postgres` role password or Supabase service-role key.
 5. Redeploy only `returnreview-api`.
 6. Verify `/health` reports `database_backend=postgresql` and `durable_persistence=true`.
@@ -58,11 +58,13 @@ The connected automation cannot set a database-role password. Do this manually w
 8. Create a test case + image, redeploy the API, and confirm both still exist afterward.
 9. Remove the test case only if explicitly desired; do not run unscoped deletes.
 
-A pooled URL commonly follows this shape:
+The preferred direct URL shape is:
 
-`postgresql+psycopg://<ROLE>.<PROJECT_REF>:<URL_ENCODED_PASSWORD>@<SUPAVISOR_HOST>:5432/postgres?sslmode=require`
+`postgresql+psycopg://return_review_backend:<URL_ENCODED_PASSWORD>@db.nowlwprtcnieihelqjoa.supabase.co:5432/postgres?sslmode=require`
 
-Copy the exact host/format from Supabase **Connect** instead of guessing it.
+The password remains private and must never be committed or pasted into chat.
+
+If the direct IPv6 path is unavailable, copy the exact session-pooler host/format from Supabase **Connect** instead of guessing it.
 
 ## Recovery
 
