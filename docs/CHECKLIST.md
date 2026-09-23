@@ -42,6 +42,7 @@
 - [x] Production readiness endpoint implemented
 
 ## Dataset readiness
+- [x] Controlled 28-image pilot capture/annotation plan + manifest validator
 - [x] Real-data audit script
 - [x] Leakage-safe physical/session split script
 - [x] Public source provenance list with verified task/license metadata

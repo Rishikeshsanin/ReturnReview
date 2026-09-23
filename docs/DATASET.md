@@ -45,3 +45,15 @@ The validator enforces the locked training class map:
 ```
 
 Detection bounding boxes are never accepted as segmentation ground truth.
+
+## Controlled 28-image plan
+
+For the fastest reproducible real pilot, follow `docs/PILOT_ANNOTATION_PLAN.md` and `data/pilot_manifest.csv`.
+
+Validate the manifest before annotation/training:
+
+~~~bash
+python scripts/validate_pilot_manifest.py --manifest data/pilot_manifest.csv
+~~~
+
+After images are captured, add `--images-dir /path/to/images` to verify that every expected file exists.

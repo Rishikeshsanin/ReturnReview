@@ -24,6 +24,9 @@ jobs:
       - name: Validate fixed LLM evaluation set
         run: python ../scripts/validate_llm_eval_set.py --input ../data/evaluation/llm_eval_cases.jsonl
 
+      - name: Validate controlled pilot manifest
+        run: python ../scripts/validate_pilot_manifest.py --manifest ../data/pilot_manifest.csv
+
       - name: Exercise truthful readiness checker
         run: |
           set +e

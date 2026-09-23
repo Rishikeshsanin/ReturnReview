@@ -160,3 +160,5 @@ No ReturnReview application table was created in `public`; no other app schema/r
 - [Demo runbook](docs/DEMO.md)
 - [Development checklist](docs/CHECKLIST.md)
 - [Finalization status](docs/FINALIZATION.md)
+- [Secure production activation](docs/SECURE_ACTIVATION.md)
+- [28-image pilot annotation plan](docs/PILOT_ANNOTATION_PLAN.md)
