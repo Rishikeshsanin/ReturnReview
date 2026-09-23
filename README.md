@@ -119,7 +119,7 @@ The review agent can read trusted case context, stored CV evidence and the appli
 
 ## Railway Project Hub governance
 
-ReturnReview is registered as **App 02 (`return_review`)** in the owner's Railway governance model. Before any Railway infrastructure change, agents must read [`RAILWAY_HUB_RULES.md`](RAILWAY_HUB_RULES.md) and the canonical Railway Project Hub documentation. ReturnReview must remain isolated in its own Railway project; unrelated applications are out of scope.
+ReturnReview is registered as **App 02 (`return_review`)** in the owner's Railway governance model. The canonical governance repository is **https://github.com/Rishikeshsanin/railway-project-hub**. Before any Railway infrastructure change, agents must read [`RAILWAY_HUB_RULES.md`](RAILWAY_HUB_RULES.md) and the canonical Railway Project Hub documentation. ReturnReview must remain isolated in its own Railway project; unrelated applications are out of scope.
 
 ## Data safety
 
