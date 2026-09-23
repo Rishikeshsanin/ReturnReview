@@ -57,3 +57,31 @@ Store model version, prompt version, evaluation-set version and generation times
 The repository includes `data/evaluation/llm_eval_cases.jsonl` and `scripts/validate_llm_eval_set.py`. The initial rows define stable scenarios and expected actions only. They are **not model results**.
 
 Before scoring, populate each row with a real `actual_review`, `manual_unsupported_claim`, `human_corrected`, and measured `latency_ms`, then run the validator with `--require-results`.
+
+## Reproducible Gemini evaluation run
+
+Once the Gemini key exists privately in the environment, run the fixed cases
+without modifying their expected labels:
+
+~~~bash
+python scripts/run_gemini_eval.py \
+  --input data/evaluation/llm_eval_cases.jsonl \
+  --output artifacts/evaluation/llm_eval_results.jsonl
+~~~
+
+The runner records the real structured review, tool-call trace and measured
+latency. It deliberately leaves `manual_unsupported_claim` and
+`human_corrected` unset.
+
+After a human evaluator fills those two labels in the **results copy**:
+
+~~~bash
+python scripts/validate_llm_eval_set.py \
+  --input artifacts/evaluation/llm_eval_results.jsonl \
+  --require-results
+
+python scripts/evaluate_reviews.py \
+  --input artifacts/evaluation/llm_eval_results.jsonl
+~~~
+
+The canonical fixed scenario file remains unchanged.
