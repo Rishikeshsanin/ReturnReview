@@ -14,7 +14,7 @@ Both services are isolated inside the dedicated Railway **ReturnReview** project
 
 > **Current AI status:** the hosted product shell is live, but project-specific CV inference and Gemini are intentionally disabled until the real pilot dataset/checkpoint/prototype bank and Gemini API key are available. The API refuses to fabricate CV evidence.
 
-> **Current persistence status:** hosted SQLite/uploads are temporary container storage. A Railway volume was tested but Railway did not expose it as an active mount after commit, so the project does **not** claim persistent hosted case storage yet.
+> **Current persistence status:** the isolated Supabase Project Hub foundation is provisioned as App 13 (`return_review`) with private Postgres tables/RLS and a dedicated backend role. The application now supports DB-backed evidence bytes, but the live Railway API remains on SQLite until the dedicated role password and PostgreSQL connection URL are set securely.
 
 ## MVP scope
 
@@ -65,8 +65,10 @@ Implemented and tested:
 - backend + frontend production containers
 - CI for backend tests, frontend build and both container healthchecks
 - live Railway frontend/backend deployment
+- isolated Supabase App 13 persistence schema + RLS foundation
+- database-backed evidence image/overlay support + readiness reporting
 
-**The next hard dependency is real pilot imagery.**
+**The remaining hard dependencies are real pilot imagery and secure production secret activation for PostgreSQL/Gemini.**
 
 See [`docs/CHECKLIST.md`](docs/CHECKLIST.md).
 
@@ -123,14 +125,22 @@ ReturnReview is registered as **App 02 (`return_review`)** in the owner's Railwa
 
 ## Data safety
 
-The shared Supabase **Projects Hub** was inspected **read-only**. ReturnReview did not create or modify any Hub schema/table/bucket/data. The repository contains the required `AGENTS.md` and `SUPABASE_HUB_RULES.md` safety contracts for any future integration.
+ReturnReview is registered in the shared Supabase **Project Hub** as **App 13** with slug/schema `return_review`.
+
+Only ReturnReview-owned resources were created:
+- private `return_review` schema
+- seven ReturnReview tables
+- dedicated `return_review_backend` Postgres login role
+- RLS policies targeting only that backend role
+
+No ReturnReview application table was created in `public`; no other app schema/resource was modified; no project-level service-role/secret key is used by the application.
 
 ## Limitations
 
 - one product category initially
 - external visible damage only
 - CV checkpoint still requires project-specific labelled data
-- hosted case persistence is not finalized
+- production PostgreSQL activation still needs the dedicated backend-role password/connection URL
 - image quality affects confidence
 - unseen/ambiguous defects remain `unknown`
 - no internal-damage, fraud, intent, authenticity or causal-responsibility inference
@@ -146,5 +156,6 @@ The shared Supabase **Projects Hub** was inspected **read-only**. ReturnReview d
 - [Model card](docs/MODEL_CARD.md)
 - [Security](docs/SECURITY.md)
 - [Deployment](docs/DEPLOYMENT.md)
+- [Persistence](docs/PERSISTENCE.md)
 - [Demo runbook](docs/DEMO.md)
 - [Development checklist](docs/CHECKLIST.md)
