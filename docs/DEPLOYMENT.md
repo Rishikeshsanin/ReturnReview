@@ -83,6 +83,29 @@ Do not deploy an untrained checkpoint. After real training:
 4. package only the approved checkpoint/prototype bank,
 5. choose current CPU backend vs separate inference service using measured runtime data.
 
+### CV artifact release package
+
+After training, held-out evaluation, and validation-set threshold calibration,
+package the **approved** model artifacts with exact checksums:
+
+~~~bash
+python scripts/package_cv_release.py \
+  --checkpoint /path/to/best.pt \
+  --prototypes /path/to/prototypes.npz \
+  --model-version returnreview-cv-v1 \
+  --category-threshold <VALIDATION_VALUE> \
+  --defect-threshold <VALIDATION_VALUE> \
+  --defect-margin <VALIDATION_VALUE>
+~~~
+
+The command fails if the checkpoint/prototype bank is missing or the prototype
+keys do not match the runtime contract. The generated
+`artifacts/cv-release/release_manifest.json` records checksums and thresholds
+but deliberately contains no invented evaluation metrics.
+
+Do not switch the hosted API to the heavy CV runtime until CPU/RAM/latency is
+measured on the approved package.
+
 ## Gemini deployment
 
 Do not commit or send the API key in chat. Add it directly to the backend environment:
