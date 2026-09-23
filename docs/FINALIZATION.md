@@ -15,7 +15,7 @@ Completed:
 - deterministic grounding guard
 - human final decision + edits + audit trail
 - local SQLite recovery path
-- isolated Supabase App 13 schema/RLS/backend role
+- dedicated Railway Postgres + persistent volume
 - database-backed evidence bytes in application code
 - deployment/readiness endpoints
 - real CV/LLM evaluation scripts
@@ -74,11 +74,14 @@ The checker reports only file/configuration presence. It never prints secret val
 
 ## External blockers that cannot be fabricated
 
-### 1. Durable production database activation
+### 1. Durable production database verification
 
-The isolated Supabase schema/role exists and Railway outbound IPv6 has been enabled and verified on `returnreview-api`. Production still runs SQLite until a password is securely assigned to `return_review_backend` and the dedicated-role PostgreSQL URL is stored in Railway.
+A dedicated Railway Postgres service and persistent volume now exist inside the isolated ReturnReview project, and the API database URL is configured through a Railway service reference.
 
-Automated secret transfer is intentionally not used. This remains a private dashboard-only activation step.
+This blocker is complete only after:
+- the API deploys successfully on PostgreSQL,
+- health/readiness confirm the database,
+- a real test case + evidence survive an API redeploy.
 
 ### 2. Gemini production activation
 
