@@ -117,6 +117,10 @@ The CV path does **not** use Gemini for visual detection.
 
 The review agent can read trusted case context, stored CV evidence and the applicable policy. It cannot approve/reject a return, write arbitrary data, infer fraud/intent/causality or invent visual findings. A deterministic grounding guard validates the generated draft before it reaches the reviewer.
 
+## Railway Project Hub governance
+
+ReturnReview is registered as **App 02 (`return_review`)** in the owner's Railway governance model. Before any Railway infrastructure change, agents must read [`RAILWAY_HUB_RULES.md`](RAILWAY_HUB_RULES.md) and the canonical Railway Project Hub documentation. ReturnReview must remain isolated in its own Railway project; unrelated applications are out of scope.
+
 ## Data safety
 
 The shared Supabase **Projects Hub** was inspected **read-only**. ReturnReview did not create or modify any Hub schema/table/bucket/data. The repository contains the required `AGENTS.md` and `SUPABASE_HUB_RULES.md` safety contracts for any future integration.
