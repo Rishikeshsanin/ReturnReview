@@ -24,3 +24,24 @@ Do not put near-identical images of the same physical box/session into both trai
 
 ## Target after feasibility
 Roughly 150–400 good images if needed; quality is more important than raw count.
+
+
+## Public-source bootstrap
+
+Public/licensed images can supplement the real pilot, but they do not remove the need to inspect mask semantics and leakage.
+
+See `docs/DATASET_SOURCES.md` for the vetted candidate list.
+
+For a YOLO segmentation export:
+
+```bash
+python scripts/validate_yolo_seg_dataset.py /path/to/dataset
+```
+
+The validator enforces the locked training class map:
+
+```text
+0: damage
+```
+
+Detection bounding boxes are never accepted as segmentation ground truth.

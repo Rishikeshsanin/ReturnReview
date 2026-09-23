@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-09-23",
+  "policy": "Sources are candidates only. License/task/class suitability must be rechecked before importing a version. Detection boxes must never be treated as segmentation masks.",
+  "sources": [
+    {
+      "id": "roboflow_box_damage_segmentation",
+      "title": "box",
+      "provider": "Roboflow Universe",
+      "url": "https://universe.roboflow.com/test-cardboard/box-fsrpn-4kgfi",
+      "task": "instance_segmentation",
+      "license": "CC BY 4.0",
+      "classes": [
+        "leakage",
+        "squeeze",
+        "tear"
+      ],
+      "suitability": {
+        "binary_damage_segmentation": "candidate_after_manual_mask_quality_review",
+        "fewshot_subtypes": "tear_only_direct_match",
+        "category_verification": "usable_after_review"
+      },
+      "notes": [
+        "All accepted defect polygons may be collapsed to the single segmentation class damage only after visual inspection.",
+        "Do not silently map squeeze to dent_or_crush; subtype mapping requires explicit human review.",
+        "Leakage is outside the locked ReturnReview subtype taxonomy."
+      ]
+    },
+    {
+      "id": "roboflow_cardboard_damage_v2",
+      "title": "Cardboard Damage V2",
+      "provider": "Roboflow Universe",
+      "url": "https://universe.roboflow.com/revas-workspace-e6qol/cardboard-damage-v2",
+      "task": "object_detection",
+      "license": "CC BY 4.0",
+      "classes": [
+        "scratch",
+        "dent",
+        "hole",
+        "tear"
+      ],
+      "suitability": {
+        "binary_damage_segmentation": "not_ground_truth_masks",
+        "fewshot_subtypes": "candidate_damage_crops_after_review",
+        "category_verification": "candidate"
+      },
+      "notes": [
+        "Bounding boxes are not valid pixel-mask ground truth.",
+        "tear is a direct taxonomy match; dent may support dent_or_crush prototypes only after manual review."
+      ]
+    },
+    {
+      "id": "roboflow_damaged_box_detection",
+      "title": "cardboard boxes",
+      "provider": "Roboflow Universe",
+      "url": "https://universe.roboflow.com/inft2060-ffjce/cardboard-boxes-4h3rr",
+      "task": "object_detection",
+      "license": "CC BY 4.0",
+      "classes": [
+        "Box",
+        "Damaged Box"
+      ],
+      "suitability": {
+        "binary_damage_segmentation": "not_ground_truth_masks",
+        "fewshot_subtypes": "not_subtype_labeled",
+        "category_verification": "candidate"
+      },
+      "notes": [
+        "Useful as candidate box/damaged-box reference imagery, not as segmentation-mask ground truth."
+      ]
+    }
+  ]
+}
