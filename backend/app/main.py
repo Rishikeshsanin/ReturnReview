@@ -26,8 +26,36 @@ logging.basicConfig(
 logger = logging.getLogger("returnreview")
 
 
+def _migrate_legacy_sqlite() -> None:
+    if settings.database_backend != "sqlite":
+        return
+    with engine.begin() as connection:
+        image_columns = {
+            row[1] for row in connection.execute(text("pragma table_info(case_images)")).fetchall()
+        }
+        if image_columns:
+            if "content_type" not in image_columns:
+                connection.execute(text(
+                    "alter table case_images add column content_type varchar(80) default 'image/jpeg'"
+                ))
+            if "image_blob" not in image_columns:
+                connection.execute(text("alter table case_images add column image_blob blob"))
+
+        finding_columns = {
+            row[1] for row in connection.execute(text("pragma table_info(defect_findings)")).fetchall()
+        }
+        if finding_columns:
+            if "mask_content_type" not in finding_columns:
+                connection.execute(text(
+                    "alter table defect_findings add column mask_content_type varchar(80)"
+                ))
+            if "mask_blob" not in finding_columns:
+                connection.execute(text("alter table defect_findings add column mask_blob blob"))
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    _migrate_legacy_sqlite()
     Base.metadata.create_all(bind=engine)
     logger.info(
         "application_started env=%s database_backend=%s durable_persistence=%s cv_model_version=%s",
