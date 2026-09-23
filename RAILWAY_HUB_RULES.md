@@ -51,7 +51,12 @@ The canonical ReturnReview deployment is the standalone Railway project `ReturnR
 - `returnreview-api`
 - `returnreview-web`
 
-Any `app01-motionlab` service or Hub metadata currently found inside the ReturnReview project is known migration residue from an earlier Hub experiment. It is **not** part of ReturnReview's intended runtime architecture and must not be modified or deleted until the canonical Hub exists and the documented cleanup process is approved.
+The earlier shared-runtime experiment has been fully cleaned up:
+- the non-canonical `app01-motionlab` duplicate was removed after audit and explicit approval
+- the old project-level `hub.apps`, `hub.architecture_version`, and `hub.read_me_first` metadata flags were removed after verification
+- canonical governance now lives only in `Rishikeshsanin/railway-project-hub`
+
+ReturnReview currently contains only its canonical runtime services: `returnreview-api` and `returnreview-web`.
 
 ReturnReview currently has no active Railway volume. Hosted SQLite/uploads are ephemeral until durable persistence is deliberately implemented.
 
