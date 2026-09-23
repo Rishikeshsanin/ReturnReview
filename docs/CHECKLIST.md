@@ -83,7 +83,7 @@
 - [x] Register database + volume in Railway Project Hub governance
 - [x] Configure `RETURNREVIEW_DATABASE_URL` with a Railway service reference
 - [x] Configure `RETURNREVIEW_DATABASE_SCHEMA=public`
-- [ ] Verify API reports PostgreSQL + durable persistence
+- [x] Verify API reports PostgreSQL + durable persistence
 - [ ] Verify case + image persistence across an API redeploy
 
 ## Final submission
