@@ -1,110 +1,67 @@
 # Secure Production Activation
 
-This is the only manual secret-handling step left in ReturnReview's hosted stack.
-
 **Never paste database passwords or API keys into chat, GitHub, screenshots, docs, or frontend variables.**
 
-## Part A — Activate durable Supabase Postgres
+## Part A — Railway Postgres
 
-Already verified:
-- Supabase Project Hub App 13: `return_review`
-- private schema: `return_review`
-- dedicated role: `return_review_backend`
-- role is login-enabled, non-superuser, non-bypass-RLS
-- seven ReturnReview tables exist
-- RLS is enabled on all seven
-- role-scoped policies exist on all seven
-- no ReturnReview-specific security-advisor finding was observed
+The production database is the dedicated Postgres service inside the isolated **ReturnReview** Railway project.
 
-### 1. Set the dedicated role password
+Already provisioned:
+- Postgres service ID: `02cc5aaf-b427-48d8-bfdd-488a1d714daf`
+- volume ID: `6114b26f-88d5-40d9-ad53-b1de917bc703`
+- private networking
+- no public database domain
 
-In the Supabase **Project Hub** SQL editor, choose your own strong password and run:
+The API should use Railway reference variables:
 
-~~~sql
-alter role return_review_backend
-with password 'YOUR_PRIVATE_STRONG_PASSWORD';
+~~~text
+RETURNREVIEW_DATABASE_URL=${{Postgres.DATABASE_URL}}
+RETURNREVIEW_DATABASE_SCHEMA=public
 ~~~
 
-Do not reuse the Project Hub `postgres` password.
+No database password needs to be copied into chat or source.
 
-### 2. Build the dedicated-role connection string
-
-Railway outbound IPv6 is now enabled **only on `returnreview-api`**, so the preferred production connection is the Supabase direct Postgres endpoint:
-
-- host: `db.nowlwprtcnieihelqjoa.supabase.co`
-- port: `5432`
-- database: `postgres`
-- role: `return_review_backend`
-- SSL: required
-
-Use the private password you assigned in step 1. URL-encode it if necessary.
-
-If direct IPv6 connectivity is ever unavailable, use the exact **Session pooler** string shown by Supabase Connect as the fallback. Do not guess a pooler region/host.
-
-### 3. Configure only ReturnReview API in Railway
-
-Outbound IPv6 is already enabled and verified on `returnreview-api`; do not enable it globally or on unrelated projects.
-
-Railway → **ReturnReview** → **returnreview-api** → Variables:
-
-- `RETURNREVIEW_DATABASE_SCHEMA=return_review`
-- `RETURNREVIEW_DATABASE_URL=<your dedicated-role PostgreSQL URL>`
-
-Do not put the URL in `returnreview-web`.
-
-### 4. Redeploy only returnreview-api
-
-After deployment, verify:
+After deployment verify:
 - `/health` → `database_backend=postgresql`
 - `/health` → `durable_persistence=true`
 - `/readiness` → database OK
-- logs no longer say `database_backend=sqlite`
+- logs show PostgreSQL rather than SQLite
 
-### 5. Persistence proof
+Then run the redeploy persistence proof described in `docs/PERSISTENCE.md`.
 
-1. create a temporary ReturnReview case
-2. upload a valid 2–4 image evidence set
-3. confirm the case appears
-4. redeploy only `returnreview-api`
-5. reload the case
-6. verify case metadata and stored evidence still exist
+## Part B — Gemini
 
-This proves Railway ephemeral disk is no longer the source of truth.
+Gemini still requires one private backend secret:
 
-## Part B — Activate Gemini
+Railway → **ReturnReview** → **returnreview-api** → Variables
 
-Railway → **ReturnReview** → **returnreview-api** → Variables:
+~~~text
+RETURNREVIEW_GEMINI_API_KEY=<private key>
+RETURNREVIEW_GEMINI_MODEL=gemini-3.8-flash
+RETURNREVIEW_LLM_ENABLED=true
+~~~
 
-- `RETURNREVIEW_GEMINI_API_KEY=<your private Gemini key>`
-- `RETURNREVIEW_GEMINI_MODEL=gemini-3.8-flash`
-- `RETURNREVIEW_LLM_ENABLED=true`
-
-The key belongs only on the backend service.
+The key belongs only on the backend service. Do not put it on `returnreview-web`.
 
 After redeployment:
 - `/health` should report LLM enabled
 - `/readiness` should no longer include `gemini_not_enabled`
 
-Then run the fixed evaluation scenarios and manually review the outputs before publishing metrics.
+Then run the fixed Gemini evaluation and manually review every generated row before publishing metrics.
+
+## Retained Supabase foundation
+
+The previous Supabase App 13 resources remain intact but are no longer the intended production database. Do not delete them as part of normal Railway activation.
 
 ## Rollback
 
-If Postgres activation fails:
-- restore the prior SQLite database URL
+If Railway Postgres activation fails:
+- restore the prior SQLite database URL temporarily
 - redeploy only the API
-- leave the isolated Supabase schema untouched while troubleshooting
+- keep the Railway Postgres volume intact
+- investigate without exposing credentials
 
 If Gemini fails:
 - set `RETURNREVIEW_LLM_ENABLED=false`
 - keep the deterministic fallback
 - investigate without exposing the API key
-
-## What ChatGPT can verify after you finish this page
-
-Once the secret values are saved in the dashboards, tell ChatGPT only:
-
-> secure activation done
-
-Do **not** send the values.
-
-ChatGPT can then inspect variable **names**, deployment logs, health/readiness, and persistence behaviour without seeing the secrets.

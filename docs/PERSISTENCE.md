@@ -4,7 +4,7 @@
 
 ReturnReview must preserve cases, audit history, uploaded evidence, and generated overlays across Railway redeploys without sharing another application's data.
 
-## Architecture
+## Production architecture
 
 ~~~text
 Browser
@@ -12,68 +12,76 @@ Browser
 ReturnReview web (Railway)
   ↓
 ReturnReview API (Railway)
+  ↓ private Railway service reference
+ReturnReview Postgres (Railway)
   ↓
-dedicated DB role: return_review_backend
-  ↓
-Supabase Project Hub Postgres
-  ↓
-private schema: return_review
+postgres-volume
 ~~~
 
-The backend still writes a temporary local copy of evidence files so YOLO/OpenCLIP can consume ordinary file paths. The durable copy is stored in Postgres:
+All production runtime resources remain inside the isolated Railway project **ReturnReview**.
 
+Canonical database resources:
+- project: `ReturnReview`
+- project ID: `3b5a435b-a0ca-43c0-85c0-9783073a8cd4`
+- database service: `Postgres`
+- database service ID: `02cc5aaf-b427-48d8-bfdd-488a1d714daf`
+- persistent volume: `postgres-volume`
+- volume ID: `6114b26f-88d5-40d9-ad53-b1de917bc703`
+- mount path: `/var/lib/postgresql/data`
+- public database domain: none
+
+The backend stores durable evidence bytes in Postgres:
 - `case_images.image_blob`
 - `defect_findings.mask_blob`
 
-The UI serves those bytes through case-scoped FastAPI media endpoints. A Railway container restart can therefore recreate local inference files from the database when needed.
+A temporary local copy may still be recreated when YOLO/OpenCLIP needs a filesystem path; the database remains the intended durable source of truth.
 
-## Provisioned state
+## API configuration
 
-Already completed:
+`returnreview-api` uses a Railway reference rather than a copied database password:
 
-- ReturnReview registered as Supabase Hub App 13
-- `hub.assert_app_scope('return_review','return_review')` passed
-- private `return_review` schema created
-- seven ReturnReview tables created
-- RLS enabled on every ReturnReview table
-- policies scoped to `return_review_backend`
-- dedicated non-superuser/non-bypass-RLS login role created
-- schema, role, and tables registered in `hub.app_resources`
-- Supabase security advisor checked after DDL
-- no ReturnReview-specific security advisory remains from this foundation
+~~~text
+RETURNREVIEW_DATABASE_URL=${{Postgres.DATABASE_URL}}
+RETURNREVIEW_DATABASE_SCHEMA=public
+~~~
 
-## Production activation — secret-only step
+Railway resolves the database reference internally. Do not copy or expose the resolved credential in chat, GitHub, frontend variables, screenshots, or documentation.
 
-The connected automation cannot set a database-role password. Do this manually without sharing the password:
+## Verification gate
 
-1. In the Supabase SQL editor for Project Hub, set a strong password for `return_review_backend`.
-2. In Railway → ReturnReview → `returnreview-api` → Variables, set:
-   - `RETURNREVIEW_DATABASE_SCHEMA=return_review`
-   - `RETURNREVIEW_DATABASE_URL=<dedicated return_review_backend PostgreSQL URL>`
-3. Prefer the direct Supabase Postgres host over IPv6; outbound IPv6 is enabled only on `returnreview-api`. Use the Supavisor **session pooler** (port 5432) only as the IPv4 fallback.
-4. Do not use the `postgres` role password or Supabase service-role key.
-5. Redeploy only `returnreview-api`.
-6. Verify `/health` reports `database_backend=postgresql` and `durable_persistence=true`.
-7. Verify `/readiness` reports database OK.
-8. Create a test case + image, redeploy the API, and confirm both still exist afterward.
-9. Remove the test case only if explicitly desired; do not run unscoped deletes.
+Do not call persistence complete merely because Postgres exists.
 
-The preferred direct URL shape is:
+Required proof:
+1. API deployment succeeds with PostgreSQL configured.
+2. `/health` reports `database_backend=postgresql`.
+3. `/health` reports `durable_persistence=true`.
+4. `/readiness` reports database OK.
+5. create a temporary ReturnReview case.
+6. upload a valid 2–4 image evidence set.
+7. confirm the case and media are retrievable.
+8. redeploy only `returnreview-api`.
+9. reload the same case and evidence.
+10. confirm they survived.
 
-`postgresql+psycopg://return_review_backend:<URL_ENCODED_PASSWORD>@db.nowlwprtcnieihelqjoa.supabase.co:5432/postgres?sslmode=require`
+Only then mark durable persistence complete.
 
-The password remains private and must never be committed or pasted into chat.
+## Supabase history
 
-If the direct IPv6 path is unavailable, copy the exact session-pooler host/format from Supabase **Connect** instead of guessing it.
+A previously provisioned Supabase Project Hub App 13 foundation still exists:
+- schema `return_review`
+- seven ReturnReview tables
+- dedicated `return_review_backend` role
+- role-scoped RLS policies
+
+Those resources are retained and untouched for safety/history. They are **not** the intended production runtime database after the Railway migration. Do not delete or modify them without a separate explicit retirement/migration decision.
 
 ## Recovery
 
-If PostgreSQL activation fails:
+If the Railway Postgres API activation fails:
+- do not delete the Railway database or volume
+- restore the previous SQLite URL only as a temporary rollback
+- redeploy only `returnreview-api`
+- inspect logs and private-network/reference configuration
+- do not modify unrelated Railway projects or the retained Supabase foundation
 
-- keep the isolated Supabase schema intact
-- restore `RETURNREVIEW_DATABASE_URL` to the previous SQLite value
-- leave `RETURNREVIEW_DATABASE_SCHEMA` harmlessly configured or remove it
-- redeploy only ReturnReview API
-- investigate connection/authentication without modifying another app
-
-The SQLite fallback is for recovery/development; it is not the final hosted persistence target.
+SQLite is a development/recovery fallback, not the final hosted persistence target.

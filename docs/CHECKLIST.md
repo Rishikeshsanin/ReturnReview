@@ -40,7 +40,8 @@
 - [x] RLS policies + Hub resource registry verified
 - [x] DB-backed image/overlay persistence implemented in application code
 - [x] Production readiness endpoint implemented
-- [x] Railway API outbound IPv6 enabled for direct Supabase Postgres connectivity
+- [x] Dedicated Railway Postgres + persistent volume provisioned in the isolated ReturnReview project
+- [x] API database URL configured through a Railway service reference
 
 ## Dataset readiness
 - [x] Controlled 28-image pilot capture/annotation plan + manifest validator
@@ -76,12 +77,13 @@
 - [ ] Generate groundedness/unsupported-claim/policy/agreement/correction/tool/latency metrics
 
 ## Persistence
-- [x] Choose final persistent hosted storage: isolated Project Hub Postgres
-- [x] Register `return_review` after read-only safety check
-- [x] Create only isolated `return_review` resources with RLS
-- [x] Register schema/tables/backend role in `hub.app_resources`
-- [ ] Securely set the dedicated `return_review_backend` password in Supabase
-- [ ] Set Railway `RETURNREVIEW_DATABASE_URL` + `RETURNREVIEW_DATABASE_SCHEMA=return_review`
+- [x] Choose final production persistence: dedicated Railway Postgres
+- [x] Provision Postgres only inside the isolated ReturnReview project
+- [x] Provision dedicated persistent database volume
+- [x] Register database + volume in Railway Project Hub governance
+- [x] Configure `RETURNREVIEW_DATABASE_URL` with a Railway service reference
+- [x] Configure `RETURNREVIEW_DATABASE_SCHEMA=public`
+- [ ] Verify API reports PostgreSQL + durable persistence
 - [ ] Verify case + image persistence across an API redeploy
 
 ## Final submission

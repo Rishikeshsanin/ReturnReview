@@ -14,7 +14,7 @@ Both services are isolated inside the dedicated Railway **ReturnReview** project
 
 > **Current AI status:** the hosted product shell is live, but project-specific CV inference and Gemini are intentionally disabled until the real pilot dataset/checkpoint/prototype bank and Gemini API key are available. The API refuses to fabricate CV evidence.
 
-> **Current persistence status:** the isolated Supabase Project Hub foundation is provisioned as App 13 (`return_review`) with private Postgres tables/RLS and a dedicated backend role. DB-backed evidence bytes are implemented and Railway API outbound IPv6 is enabled. The live API remains on SQLite until the dedicated role password and PostgreSQL URL are set securely.
+> **Current persistence status:** a dedicated Railway Postgres service and persistent volume are provisioned inside the isolated **ReturnReview** Railway project. The API is being switched from SQLite to that private Railway database using a service-reference connection; persistence is considered final only after the API reports PostgreSQL and a case + evidence survive an API redeploy. The older Supabase App 13 foundation is retained but is no longer the intended production runtime database.
 
 ## MVP scope
 
@@ -65,10 +65,10 @@ Implemented and tested:
 - backend + frontend production containers
 - CI for backend tests, frontend build and both container healthchecks
 - live Railway frontend/backend deployment
-- isolated Supabase App 13 persistence schema + RLS foundation
+- isolated Railway Postgres + persistent database volume
 - database-backed evidence image/overlay support + readiness reporting
 
-**The remaining hard dependencies are real pilot imagery and secure production secret activation for PostgreSQL/Gemini.**
+**The remaining hard dependencies are the real CV pilot/data pipeline, Gemini activation/evaluation, and final persistence proof across an API redeploy.**
 
 See [`docs/CHECKLIST.md`](docs/CHECKLIST.md).
 
@@ -125,22 +125,16 @@ ReturnReview is registered as **App 02 (`return_review`)** in the owner's Railwa
 
 ## Data safety
 
-ReturnReview is registered in the shared Supabase **Project Hub** as **App 13** with slug/schema `return_review`.
+ReturnReview's intended production database now lives inside the isolated Railway **ReturnReview** project as a dedicated Postgres service with its own persistent volume and private networking.
 
-Only ReturnReview-owned resources were created:
-- private `return_review` schema
-- seven ReturnReview tables
-- dedicated `return_review_backend` Postgres login role
-- RLS policies targeting only that backend role
-
-No ReturnReview application table was created in `public`; no other app schema/resource was modified; no project-level service-role/secret key is used by the application.
+The earlier Supabase **Project Hub App 13** resources remain intact as an inactive, isolated historical foundation. They are not deleted or modified as part of the Railway migration, and the production API must not depend on them once Railway Postgres is verified.
 
 ## Limitations
 
 - one product category initially
 - external visible damage only
 - CV checkpoint still requires project-specific labelled data
-- production PostgreSQL activation still needs the dedicated backend-role password/connection URL
+- production PostgreSQL still needs final persistence proof across an API redeploy
 - image quality affects confidence
 - unseen/ambiguous defects remain `unknown`
 - no internal-damage, fraud, intent, authenticity or causal-responsibility inference

@@ -23,20 +23,20 @@ Verified configuration:
 
 ### Current persistence status
 
-The final persistence architecture is now provisioned in the shared Supabase Project Hub, isolated to **App 13 / `return_review`**.
+The intended production persistence architecture is the dedicated Railway Postgres service inside the isolated **ReturnReview** project.
 
 Provisioned:
-- private `return_review` schema
-- seven application tables
-- RLS on every ReturnReview table
-- dedicated `return_review_backend` role with no cross-app privileges
-- schema/table/role ownership registered in `hub.app_resources`
-- persistent evidence/overlay byte columns
-- application support for Postgres + DB-backed media serving
+- Postgres service ID `02cc5aaf-b427-48d8-bfdd-488a1d714daf`
+- persistent volume ID `6114b26f-88d5-40d9-ad53-b1de917bc703`
+- private Railway networking
+- no public database domain
+- application support for PostgreSQL + DB-backed media serving
 
-The live Railway API still uses its previous SQLite URL until the dedicated role credential is set securely. This is deliberate: production does **not** claim durable persistence until the real connection is activated and verified across a redeploy.
+The API uses a Railway service-reference database URL rather than a copied password. Production persistence is not considered complete until the PostgreSQL deployment is healthy and a case + evidence survive an API redeploy.
 
-See `docs/PERSISTENCE.md` for the secret-only activation and rollback procedure.
+The older Supabase App 13 foundation is retained but is not the intended production runtime database.
+
+See `docs/PERSISTENCE.md` for verification and rollback.
 
 ### Current feature flags
 
@@ -45,6 +45,7 @@ RETURNREVIEW_ENV=production
 RETURNREVIEW_DEMO_MODE=true
 RETURNREVIEW_CV_MODEL_VERSION=untrained
 RETURNREVIEW_LLM_ENABLED=false
+RETURNREVIEW_DATABASE_SCHEMA=public
 ```
 
 This is intentional. Production must not pretend an untrained model is available.

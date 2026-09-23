@@ -8,7 +8,7 @@
 - Railway project: `ReturnReview`
 - Railway project ID: `3b5a435b-a0ca-43c0-85c0-9783073a8cd4`
 - Production environment: `production`
-- Registered production services: `returnreview-api`, `returnreview-web`
+- Registered production services: `returnreview-api`, `returnreview-web`, `Postgres`
 - Canonical Hub repository: `https://github.com/Rishikeshsanin/railway-project-hub`
 
 ## Mandatory read-first rule
@@ -50,15 +50,14 @@ For destructive or production-impacting actions, inspect dependencies and rollba
 The canonical ReturnReview deployment is the standalone Railway project `ReturnReview` with:
 - `returnreview-api`
 - `returnreview-web`
+- `Postgres` with its dedicated persistent volume
 
 The earlier shared-runtime experiment has been fully cleaned up:
 - the non-canonical `app01-motionlab` duplicate was removed after audit and explicit approval
 - the old project-level `hub.apps`, `hub.architecture_version`, and `hub.read_me_first` metadata flags were removed after verification
 - canonical governance now lives only in `Rishikeshsanin/railway-project-hub`
 
-ReturnReview currently contains only its canonical runtime services: `returnreview-api` and `returnreview-web`.
-
-ReturnReview currently has no active Railway volume. Hosted SQLite/uploads are ephemeral until durable persistence is deliberately implemented.
+ReturnReview now contains its canonical API, web, and Postgres runtime resources. The Postgres service owns a dedicated persistent Railway volume and has no public database domain. The API must connect to it over Railway private/service-reference configuration.
 
 ## New resources
 No new Railway resource may be created for ReturnReview until it is documented in the canonical Hub registry with owner, purpose, environment, expected name, and isolation boundary.
