@@ -51,3 +51,9 @@ The operational approve/reject decision remains human-owned and is **not** treat
 
 ## Reproducibility
 Store model version, prompt version, evaluation-set version and generation timestamp with every published result.
+
+## Fixed evaluation scaffold
+
+The repository includes `data/evaluation/llm_eval_cases.jsonl` and `scripts/validate_llm_eval_set.py`. The initial rows define stable scenarios and expected actions only. They are **not model results**.
+
+Before scoring, populate each row with a real `actual_review`, `manual_unsupported_claim`, `human_corrected`, and measured `latency_ms`, then run the validator with `--require-results`.

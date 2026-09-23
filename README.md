@@ -159,3 +159,4 @@ No ReturnReview application table was created in `public`; no other app schema/r
 - [Persistence](docs/PERSISTENCE.md)
 - [Demo runbook](docs/DEMO.md)
 - [Development checklist](docs/CHECKLIST.md)
+- [Finalization status](docs/FINALIZATION.md)

@@ -62,6 +62,8 @@
 - [ ] Package/deploy validated CV artifacts after runtime measurement
 
 ## LLM evaluation
+- [x] Fixed LLM evaluation scenario set + schema validator
+- [x] Truthful release-readiness checker
 - [ ] Add Gemini key to local/Railway environment (never commit or paste it into chat)
 - [ ] Enable `RETURNREVIEW_LLM_ENABLED=true`
 - [ ] Run real Gemini tool-calling cases
