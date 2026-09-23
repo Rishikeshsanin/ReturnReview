@@ -29,6 +29,7 @@ Completed:
 - normal/no visible damage
 - tear
 - crushed corner
+- dent or crush
 - unknown defect
 - failed category verification
 
@@ -40,12 +41,20 @@ Validate it:
 python scripts/validate_llm_eval_set.py
 ~~~
 
+After a real Gemini run, each generated result remains explicitly unreviewed until a human sets `manual_reviewed=true` and supplies the two manual labels.
+
 After real Gemini runs and manual review labels are added:
 
 ~~~bash
-python scripts/validate_llm_eval_set.py --require-results
-python scripts/evaluate_reviews.py --input data/evaluation/llm_eval_cases.jsonl
+python scripts/validate_llm_eval_set.py \
+  --input artifacts/evaluation/llm_eval_results.jsonl \
+  --require-results
+
+python scripts/evaluate_reviews.py \
+  --input artifacts/evaluation/llm_eval_results.jsonl
 ~~~
+
+The final evaluator refuses incomplete or unreviewed rows.
 
 ## Release-readiness check
 
