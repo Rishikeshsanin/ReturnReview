@@ -67,9 +67,9 @@ The checker reports only file/configuration presence. It never prints secret val
 
 ### 1. Durable production database activation
 
-The isolated Supabase schema/role exists, but production currently runs SQLite until a password is securely assigned to `return_review_backend` and the exact Supabase connection string is stored in Railway.
+The isolated Supabase schema/role exists and Railway outbound IPv6 has been enabled and verified on `returnreview-api`. Production still runs SQLite until a password is securely assigned to `return_review_backend` and the dedicated-role PostgreSQL URL is stored in Railway.
 
-This is a secret-only activation step.
+Automated secret transfer is intentionally not used. This remains a private dashboard-only activation step.
 
 ### 2. Gemini production activation
 

@@ -14,7 +14,7 @@ Both services are isolated inside the dedicated Railway **ReturnReview** project
 
 > **Current AI status:** the hosted product shell is live, but project-specific CV inference and Gemini are intentionally disabled until the real pilot dataset/checkpoint/prototype bank and Gemini API key are available. The API refuses to fabricate CV evidence.
 
-> **Current persistence status:** the isolated Supabase Project Hub foundation is provisioned as App 13 (`return_review`) with private Postgres tables/RLS and a dedicated backend role. The application now supports DB-backed evidence bytes, but the live Railway API remains on SQLite until the dedicated role password and PostgreSQL connection URL are set securely.
+> **Current persistence status:** the isolated Supabase Project Hub foundation is provisioned as App 13 (`return_review`) with private Postgres tables/RLS and a dedicated backend role. DB-backed evidence bytes are implemented and Railway API outbound IPv6 is enabled. The live API remains on SQLite until the dedicated role password and PostgreSQL URL are set securely.
 
 ## MVP scope
 
