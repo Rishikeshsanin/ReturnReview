@@ -27,25 +27,28 @@ with password 'YOUR_PRIVATE_STRONG_PASSWORD';
 
 Do not reuse the Project Hub `postgres` password.
 
-### 2. Get the exact session-pooler connection string
+### 2. Build the dedicated-role connection string
 
-In Supabase Project Hub:
-1. click **Connect**
-2. choose **Session pooler**
-3. use port **5432**
-4. use the exact host Supabase shows
-5. use the dedicated role `return_review_backend`, not `postgres`
-6. URL-encode the password when necessary
-7. keep SSL enabled
+Railway outbound IPv6 is now enabled **only on `returnreview-api`**, so the preferred production connection is the Supabase direct Postgres endpoint:
 
-Use the dashboard-provided host/format; do not guess it from documentation examples.
+- host: `db.nowlwprtcnieihelqjoa.supabase.co`
+- port: `5432`
+- database: `postgres`
+- role: `return_review_backend`
+- SSL: required
+
+Use the private password you assigned in step 1. URL-encode it if necessary.
+
+If direct IPv6 connectivity is ever unavailable, use the exact **Session pooler** string shown by Supabase Connect as the fallback. Do not guess a pooler region/host.
 
 ### 3. Configure only ReturnReview API in Railway
+
+Outbound IPv6 is already enabled and verified on `returnreview-api`; do not enable it globally or on unrelated projects.
 
 Railway → **ReturnReview** → **returnreview-api** → Variables:
 
 - `RETURNREVIEW_DATABASE_SCHEMA=return_review`
-- `RETURNREVIEW_DATABASE_URL=<your dedicated-role PostgreSQL/Supavisor URL>`
+- `RETURNREVIEW_DATABASE_URL=<your dedicated-role PostgreSQL URL>`
 
 Do not put the URL in `returnreview-web`.
 
