@@ -41,6 +41,12 @@
 - [x] DB-backed image/overlay persistence implemented in application code
 - [x] Production readiness endpoint implemented
 
+## Dataset readiness
+- [x] Real-data audit script
+- [x] Leakage-safe physical/session split script
+- [x] Public source provenance list with verified task/license metadata
+- [x] Strict YOLO segmentation export validator
+
 ## Blocked on real project data
 - [ ] Collect 24–30 pilot images
 - [ ] Inspect pilot quality/coverage
