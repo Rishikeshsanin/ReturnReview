@@ -10,6 +10,7 @@ class DefectEvidence(BaseModel):
     confidence: float = Field(ge=0, le=1)
     bbox: list[float] | None = None
     mask_path: str | None = None
+    mask_url: str | None = None
     affected_area_percent: float | None = None
 
 
