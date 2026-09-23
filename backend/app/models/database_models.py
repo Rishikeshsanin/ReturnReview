@@ -45,7 +45,7 @@ class CaseImage(Base):
     case_id: Mapped[str] = mapped_column(ForeignKey("return_cases.id", ondelete="CASCADE"), index=True)
     image_path: Mapped[str] = mapped_column(Text)
     content_type: Mapped[str] = mapped_column(String(80), default="image/jpeg")
-    image_blob: Mapped[bytes] = mapped_column(LargeBinary)
+    image_blob: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     view_label: Mapped[str] = mapped_column(String(40), default="unspecified")
     width: Mapped[int] = mapped_column(default=0)
     height: Mapped[int] = mapped_column(default=0)
