@@ -6,8 +6,7 @@ This repository is the only application scope for **ReturnReview**.
 - Application: ReturnReview
 - Railway Hub app number: App 02
 - Railway Hub slug: `return_review`
-- Intended Supabase Project Hub slug: `return_review`
-- Intended Supabase Project Hub schema: `return_review`
+- Retained Supabase Project Hub slug/schema: `return_review` (inactive historical foundation; not production runtime)
 - Repository: `https://github.com/Rishikeshsanin/ReturnReview`
 - Railway project: `ReturnReview`
 
@@ -33,12 +32,12 @@ This repository is the only application scope for **ReturnReview**.
 8. Run security checks after meaningful database/RLS changes.
 
 ## Current persistence state
-ReturnReview is registered as Supabase Project Hub **App 13** with private schema `return_review`.
+The intended production persistence target is the dedicated Railway Postgres service inside the standalone **ReturnReview** Railway project.
 
-Provisioned ReturnReview-owned resources:
-- seven tables in `return_review`
-- dedicated `return_review_backend` login role
-- RLS policies scoped to that role
-- Hub resource-registry entries
+Canonical Railway persistence resources:
+- Postgres service ID: `02cc5aaf-b427-48d8-bfdd-488a1d714daf`
+- persistent volume ID: `6114b26f-88d5-40d9-ad53-b1de917bc703`
+- private networking only; no public database domain
+- API connection must use Railway reference/private variables, not copied credentials
 
-Production Railway remains on SQLite until the dedicated database-role password and connection URL are set securely. Never substitute the Project Hub `postgres` password or service-role/secret key. The canonical Railway runtime remains the standalone `ReturnReview` project.
+The earlier Supabase Project Hub App 13 schema/role/tables remain intact but are not the production runtime target. Do not modify or delete them without a separate scoped migration/retirement decision.
