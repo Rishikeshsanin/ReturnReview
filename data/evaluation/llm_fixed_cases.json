@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "fixed_at": "2026-09-23",
+  "policy_id": "RET-CBX-001",
+  "note": "Structured LLM evaluation fixtures. These are not CV model outputs and must not be used as CV metrics.",
+  "cases": [
+    {
+      "case_id": "llm-eval-tear-01",
+      "external_case_id": "EVAL-TEAR-01",
+      "product_name": "Corrugated Shipping Box",
+      "product_category": "cardboard_box",
+      "customer_reason": "The box arrived with a visible tear on the front face.",
+      "expected_action": "manual_review",
+      "expected_policy_id": "RET-CBX-001",
+      "evidence": {
+        "case_id": "llm-eval-tear-01",
+        "product_category": "cardboard_box",
+        "category_verified": true,
+        "verification_score": 0.91,
+        "findings": [
+          {
+            "finding_id": "f-tear-01",
+            "image_id": "img-front-01",
+            "defect_type": "tear",
+            "confidence": 0.88,
+            "bbox": [
+              82,
+              94,
+              214,
+              236
+            ],
+            "affected_area_percent": 4.2
+          }
+        ],
+        "aggregated_defects": [
+          {
+            "defect_type": "tear",
+            "max_confidence": 0.88,
+            "supporting_image_ids": [
+              "img-front-01"
+            ],
+            "finding_ids": [
+              "f-tear-01"
+            ],
+            "max_affected_area_percent": 4.2
+          }
+        ],
+        "uncertainties": []
+      }
+    },
+    {
+      "case_id": "llm-eval-crushed-01",
+      "external_case_id": "EVAL-CRUSHED-01",
+      "product_name": "Corrugated Shipping Box",
+      "product_category": "cardboard_box",
+      "customer_reason": "One corner looks crushed in the return photos.",
+      "expected_action": "manual_review",
+      "expected_policy_id": "RET-CBX-001",
+      "evidence": {
+        "case_id": "llm-eval-crushed-01",
+        "product_category": "cardboard_box",
+        "category_verified": true,
+        "verification_score": 0.9,
+        "findings": [
+          {
+            "finding_id": "f-corner-01",
+            "image_id": "img-front-02",
+            "defect_type": "crushed_corner",
+            "confidence": 0.84,
+            "bbox": [
+              420,
+              300,
+              615,
+              472
+            ],
+            "affected_area_percent": 6.8
+          },
+          {
+            "finding_id": "f-corner-02",
+            "image_id": "img-right-02",
+            "defect_type": "crushed_corner",
+            "confidence": 0.81,
+            "bbox": [
+              22,
+              278,
+              175,
+              460
+            ],
+            "affected_area_percent": 5.9
+          }
+        ],
+        "aggregated_defects": [
+          {
+            "defect_type": "crushed_corner",
+            "max_confidence": 0.84,
+            "supporting_image_ids": [
+              "img-front-02",
+              "img-right-02"
+            ],
+            "finding_ids": [
+              "f-corner-01",
+              "f-corner-02"
+            ],
+            "max_affected_area_percent": 6.8
+          }
+        ],
+        "uncertainties": [
+          "crushed_corner appears in 2 views; the MVP groups these as supporting evidence but does not assert exact cross-view geometric identity."
+        ]
+      }
+    },
+    {
+      "case_id": "llm-eval-dent-01",
+      "external_case_id": "EVAL-DENT-01",
+      "product_name": "Corrugated Shipping Box",
+      "product_category": "cardboard_box",
+      "customer_reason": "The side panel appears dented.",
+      "expected_action": "manual_review",
+      "expected_policy_id": "RET-CBX-001",
+      "evidence": {
+        "case_id": "llm-eval-dent-01",
+        "product_category": "cardboard_box",
+        "category_verified": true,
+        "verification_score": 0.89,
+        "findings": [
+          {
+            "finding_id": "f-dent-01",
+            "image_id": "img-left-03",
+            "defect_type": "dent_or_crush",
+            "confidence": 0.79,
+            "bbox": [
+              150,
+              128,
+              405,
+              360
+            ],
+            "affected_area_percent": 8.1
+          }
+        ],
+        "aggregated_defects": [
+          {
+            "defect_type": "dent_or_crush",
+            "max_confidence": 0.79,
+            "supporting_image_ids": [
+              "img-left-03"
+            ],
+            "finding_ids": [
+              "f-dent-01"
+            ],
+            "max_affected_area_percent": 8.1
+          }
+        ],
+        "uncertainties": []
+      }
+    },
+    {
+      "case_id": "llm-eval-unknown-01",
+      "external_case_id": "EVAL-UNKNOWN-01",
+      "product_name": "Corrugated Shipping Box",
+      "product_category": "cardboard_box",
+      "customer_reason": "There is visible damage, but the exact type is unclear.",
+      "expected_action": "manual_review",
+      "expected_policy_id": "RET-CBX-001",
+      "evidence": {
+        "case_id": "llm-eval-unknown-01",
+        "product_category": "cardboard_box",
+        "category_verified": true,
+        "verification_score": 0.87,
+        "findings": [
+          {
+            "finding_id": "f-unknown-01",
+            "image_id": "img-top-04",
+            "defect_type": "unknown",
+            "confidence": 0.61,
+            "bbox": [
+              205,
+              80,
+              390,
+              220
+            ],
+            "affected_area_percent": 3.3
+          }
+        ],
+        "aggregated_defects": [
+          {
+            "defect_type": "unknown",
+            "max_confidence": 0.61,
+            "supporting_image_ids": [
+              "img-top-04"
+            ],
+            "finding_ids": [
+              "f-unknown-01"
+            ],
+            "max_affected_area_percent": 3.3
+          }
+        ],
+        "uncertainties": [
+          "Finding f-unknown-01 has not been confidently classified."
+        ]
+      }
+    },
+    {
+      "case_id": "llm-eval-category-fail-01",
+      "external_case_id": "EVAL-CATEGORY-FAIL-01",
+      "product_name": "Returned package",
+      "product_category": "cardboard_box",
+      "customer_reason": "The customer submitted images, but product-category verification is insufficient.",
+      "expected_action": "insufficient_evidence",
+      "expected_policy_id": "RET-CBX-001",
+      "evidence": {
+        "case_id": "llm-eval-category-fail-01",
+        "product_category": "cardboard_box",
+        "category_verified": false,
+        "verification_score": 0.48,
+        "findings": [],
+        "aggregated_defects": [],
+        "uncertainties": [
+          "Product-category verification did not meet the configured threshold."
+        ]
+      }
+    },
+    {
+      "case_id": "llm-eval-no-damage-01",
+      "external_case_id": "EVAL-NO-DAMAGE-01",
+      "product_name": "Corrugated Shipping Box",
+      "product_category": "cardboard_box",
+      "customer_reason": "The customer reports damage, but no visible damage finding is available in the submitted views.",
+      "expected_action": "no_visible_damage_detected",
+      "expected_policy_id": "RET-CBX-001",
+      "evidence": {
+        "case_id": "llm-eval-no-damage-01",
+        "product_category": "cardboard_box",
+        "category_verified": true,
+        "verification_score": 0.93,
+        "findings": [],
+        "aggregated_defects": [],
+        "uncertainties": []
+      }
+    }
+  ]
+}
