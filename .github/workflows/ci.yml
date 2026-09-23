@@ -21,6 +21,21 @@ jobs:
       - name: Syntax-check project scripts
         run: python -m py_compile ../scripts/*.py
 
+      - name: Validate fixed LLM evaluation set
+        run: python ../scripts/validate_llm_eval_set.py --input ../data/evaluation/llm_eval_cases.jsonl
+
+      - name: Exercise truthful readiness checker
+        run: |
+          set +e
+          python ../scripts/check_release_readiness.py --root .. --output /tmp/returnreview-readiness.json
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
+            cat /tmp/returnreview-readiness.json || true
+            exit "$status"
+          fi
+          cat /tmp/returnreview-readiness.json
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
