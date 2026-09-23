@@ -42,6 +42,29 @@ def main():
     if not result:
         raise SystemExit("No reference images found")
 
+    required = {
+        "category_cardboard_box",
+        "defect_tear",
+        "defect_crushed_corner",
+        "defect_dent_or_crush",
+    }
+    missing = sorted(required - set(result))
+    if missing:
+        raise SystemExit(
+            "Prototype bank is incomplete. Create reference folders named exactly: "
+            + ", ".join(sorted(required))
+            + f". Missing: {', '.join(missing)}"
+        )
+
+    unexpected = sorted(
+        key for key in result
+        if key != "category_cardboard_box" and not key.startswith("defect_")
+    )
+    if unexpected:
+        raise SystemExit(
+            "Unexpected prototype folder names: " + ", ".join(unexpected)
+        )
+
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     np.savez(out, **result)

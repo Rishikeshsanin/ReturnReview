@@ -32,3 +32,21 @@ Localization answers *where is visibly damaged?*. Prototype matching separately 
 - performance depends on capture conditions and dataset coverage
 - prototype matching can return unknown
 - no inference about internal damage, causality, responsibility, fraud or authenticity
+
+## Prototype-bank folder contract
+
+`scripts/build_prototypes.py` requires these exact reference folders:
+
+~~~text
+reference_images/
+├── category_cardboard_box/
+├── defect_tear/
+├── defect_crushed_corner/
+└── defect_dent_or_crush/
+~~~
+
+`unknown` intentionally has no prototype. It is produced when similarity or
+the top-vs-second-best margin falls below the calibrated thresholds.
+
+Reference/prototype images must come from training/reference material only, not
+the held-out test set.
