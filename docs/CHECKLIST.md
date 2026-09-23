@@ -40,6 +40,7 @@
 - [x] RLS policies + Hub resource registry verified
 - [x] DB-backed image/overlay persistence implemented in application code
 - [x] Production readiness endpoint implemented
+- [x] Railway API outbound IPv6 enabled for direct Supabase Postgres connectivity
 
 ## Dataset readiness
 - [x] Controlled 28-image pilot capture/annotation plan + manifest validator
