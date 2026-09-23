@@ -57,3 +57,27 @@ python scripts/validate_pilot_manifest.py --manifest data/pilot_manifest.csv
 ~~~
 
 After images are captured, add `--images-dir /path/to/images` to verify that every expected file exists.
+
+## Licensed public segmentation export
+
+A vetted public **instance-segmentation** export can supplement the controlled
+pilot. The repository now includes a safe binary-class converter:
+
+~~~bash
+python scripts/prepare_public_segmentation.py \
+  --input /path/to/yolo-seg-export \
+  --output data/dataset/public_damage \
+  --include-classes tear,squeeze \
+  --source-id roboflow_box_damage_segmentation \
+  --source-url https://universe.roboflow.com/tracking-u78ba/box-fsrpn \
+  --license "CC BY 4.0"
+
+python scripts/validate_yolo_seg_dataset.py data/dataset/public_damage
+~~~
+
+The converter accepts existing polygons only. A detection row such as
+`class x_center y_center width height` causes a hard failure rather than being
+treated as a mask.
+
+Public data supplements the project-controlled pilot; it does not remove the
+need for leakage review or held-out evaluation.
