@@ -27,13 +27,14 @@ export default function CaseClient({caseId,initial}:{caseId:string;initial:CaseD
 
   async function upload(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
+    const formElement=e.currentTarget;
     setBusy("upload");
     setError("");
-    const form=new FormData(e.currentTarget);
+    const form=new FormData(formElement);
     try{
       await api(`/api/cases/${caseId}/images`,{method:"POST",body:form});
       await refresh();
-      e.currentTarget.reset();
+      formElement.reset();
     }catch(e){setError(e instanceof Error?e.message:"Upload failed")}
     finally{setBusy("")}
   }
