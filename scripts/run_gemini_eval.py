@@ -4,15 +4,17 @@ This command requires RETURNREVIEW_GEMINI_API_KEY in the process environment.
 It never prints the key and never mutates the fixed expectation file.
 
 The output contains actual model reviews + measured latency, but manual labels
-remain null until a human evaluator reviews each result. Therefore published
+remain unset until a human evaluator reviews each result. Therefore published
 metrics still require validate_llm_eval_set.py --require-results.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
 
@@ -154,7 +156,12 @@ def main() -> None:
 
     from google import genai
 
-    rows = load_rows(Path(args.input))
+    input_path = Path(args.input)
+    rows = load_rows(input_path)
+    evaluation_set_sha256 = hashlib.sha256(input_path.read_bytes()).hexdigest()
+    system_prompt_sha256 = hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest()
+    generated_at_utc = datetime.now(timezone.utc).isoformat()
+
     client = genai.Client(api_key=api_key)
     results: list[dict] = []
 
@@ -165,7 +172,11 @@ def main() -> None:
         result["latency_ms"] = round(latency_ms, 3)
         result["tool_calls"] = tool_log
         result["model"] = args.model
+        result["evaluation_set_sha256"] = evaluation_set_sha256
+        result["system_prompt_sha256"] = system_prompt_sha256
+        result["generated_at_utc"] = generated_at_utc
         # These MUST be filled by a human after inspecting the real model output.
+        result["manual_reviewed"] = False
         result["manual_unsupported_claim"] = None
         result["human_corrected"] = None
         results.append(result)
@@ -182,8 +193,9 @@ def main() -> None:
     )
     print(f"wrote {out}")
     print(
-        "Manual review is still required. Fill manual_unsupported_claim and "
-        "human_corrected, then run validate_llm_eval_set.py --require-results."
+        "Manual review is still required. Set manual_reviewed=true and fill "
+        "manual_unsupported_claim + human_corrected for every row, then run "
+        "validate_llm_eval_set.py --require-results."
     )
 
 

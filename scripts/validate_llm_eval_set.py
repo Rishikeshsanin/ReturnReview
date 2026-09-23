@@ -24,7 +24,7 @@ def main() -> None:
     parser.add_argument(
         "--require-results",
         action="store_true",
-        help="Also require manually verified actual_review labels for scoring.",
+        help="Also require real Gemini outputs plus completed human-review labels.",
     )
     args = parser.parse_args()
 
@@ -41,6 +41,13 @@ def main() -> None:
         raise SystemExit("Evaluation set is empty")
 
     seen: set[str] = set()
+    provenance_fields = (
+        "model",
+        "evaluation_set_sha256",
+        "system_prompt_sha256",
+        "generated_at_utc",
+    )
+
     for index, row in enumerate(rows, start=1):
         case_id = row.get("case_id")
         if not case_id or not isinstance(case_id, str):
@@ -71,16 +78,34 @@ def main() -> None:
             review = row.get("actual_review")
             if not isinstance(review, dict):
                 raise SystemExit(f"{case_id}: actual_review missing")
-            if "manual_unsupported_claim" not in row:
-                raise SystemExit(f"{case_id}: manual_unsupported_claim missing")
-            if "human_corrected" not in row:
-                raise SystemExit(f"{case_id}: human_corrected missing")
-            if row.get("latency_ms") is None:
-                raise SystemExit(f"{case_id}: latency_ms missing")
+            if row.get("manual_reviewed") is not True:
+                raise SystemExit(f"{case_id}: manual_reviewed must be true")
+            if not isinstance(row.get("manual_unsupported_claim"), bool):
+                raise SystemExit(
+                    f"{case_id}: manual_unsupported_claim must be a human-labelled boolean"
+                )
+            if not isinstance(row.get("human_corrected"), bool):
+                raise SystemExit(
+                    f"{case_id}: human_corrected must be a human-labelled boolean"
+                )
+            latency = row.get("latency_ms")
+            if not isinstance(latency, (int, float)) or isinstance(latency, bool) or latency < 0:
+                raise SystemExit(f"{case_id}: latency_ms must be a non-negative number")
+            tool_calls = row.get("tool_calls")
+            if not isinstance(tool_calls, list) or not all(
+                isinstance(item, str) for item in tool_calls
+            ):
+                raise SystemExit(f"{case_id}: tool_calls must be a list of tool names")
+            for field in provenance_fields:
+                if not isinstance(row.get(field), str) or not row[field].strip():
+                    raise SystemExit(f"{case_id}: {field} missing")
 
     print(f"Validated {len(rows)} fixed LLM evaluation cases from {path}")
     if not args.require_results:
-        print("Scoring fields are intentionally optional until real Gemini outputs are manually reviewed.")
+        print(
+            "Scoring fields are intentionally optional until real Gemini outputs "
+            "are manually reviewed."
+        )
 
 
 if __name__ == "__main__":

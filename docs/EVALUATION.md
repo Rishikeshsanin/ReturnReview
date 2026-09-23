@@ -31,37 +31,36 @@ Report:
 
 ## LLM/review
 
-Create a small manually reviewed JSONL evaluation set. Each row records:
-- expected assistant action
-- expected policy ID
-- generated structured review
-- manual unsupported-claim label
-- whether a reviewer had to correct the draft
-- measured LLM latency
+The fixed LLM evaluation isolates the Gemini/tool/grounding layer from CV model quality. The scenario file is synthetic structured evidence for repeatable LLM testing; it is **not** a claim about CV performance.
 
-Report:
+The canonical fixed set is:
+
+`data/evaluation/llm_eval_cases.jsonl`
+
+It covers:
+- normal/no visible damage
+- tear
+- crushed corner
+- dent or crush
+- unknown defect
+- failed category verification
+
+Each row records an expected assistant action and expected policy ID. Real Gemini outputs are written to a separate results file.
+
+Report only after human review:
 - review/action agreement
 - policy correctness
 - manual unsupported-claim rate
-- grounding-guard detection rate
+- grounding-guard recall on unsupported claims
 - human correction rate
+- required-tool coverage
 - average review latency
 
 The operational approve/reject decision remains human-owned and is **not** treated as a target the LLM should learn to imitate.
 
-## Reproducibility
-Store model version, prompt version, evaluation-set version and generation timestamp with every published result.
-
-## Fixed evaluation scaffold
-
-The repository includes `data/evaluation/llm_eval_cases.jsonl` and `scripts/validate_llm_eval_set.py`. The initial rows define stable scenarios and expected actions only. They are **not model results**.
-
-Before scoring, populate each row with a real `actual_review`, `manual_unsupported_claim`, `human_corrected`, and measured `latency_ms`, then run the validator with `--require-results`.
-
 ## Reproducible Gemini evaluation run
 
-Once the Gemini key exists privately in the environment, run the fixed cases
-without modifying their expected labels:
+Once the Gemini key exists privately in the environment, run:
 
 ~~~bash
 python scripts/run_gemini_eval.py \
@@ -69,19 +68,53 @@ python scripts/run_gemini_eval.py \
   --output artifacts/evaluation/llm_eval_results.jsonl
 ~~~
 
-The runner records the real structured review, tool-call trace and measured
-latency. It deliberately leaves `manual_unsupported_claim` and
-`human_corrected` unset.
+The runner records:
+- the real structured Gemini review
+- measured latency
+- tool-call trace
+- model name
+- evaluation-set SHA-256
+- system-prompt SHA-256
+- generation timestamp
 
-After a human evaluator fills those two labels in the **results copy**:
+Every generated row starts with:
+
+~~~json
+"manual_reviewed": false,
+"manual_unsupported_claim": null,
+"human_corrected": null
+~~~
+
+This is intentional. Automated output must never be represented as manually verified.
+
+## Human verification gate
+
+For every generated row, a human evaluator must inspect the fixed scenario, expected action/policy, actual Gemini draft, grounding-guard result, and tool-call trace.
+
+Then set:
+- `manual_reviewed=true`
+- `manual_unsupported_claim` to the human judgment
+- `human_corrected` to the human judgment
+
+Do not alter the canonical fixed scenario file.
+
+Validate the reviewed results:
 
 ~~~bash
 python scripts/validate_llm_eval_set.py \
   --input artifacts/evaluation/llm_eval_results.jsonl \
   --require-results
+~~~
 
+Only after that succeeds, aggregate final metrics:
+
+~~~bash
 python scripts/evaluate_reviews.py \
   --input artifacts/evaluation/llm_eval_results.jsonl
 ~~~
 
-The canonical fixed scenario file remains unchanged.
+The evaluator independently refuses incomplete or unreviewed rows and also reports whether all three required read-only tools were used.
+
+## Reproducibility
+
+Every published LLM result must remain traceable to one model, one fixed evaluation-set checksum, one system-prompt checksum and one generation run. Never mix incompatible runs into one metric file.
