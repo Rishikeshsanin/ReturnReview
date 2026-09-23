@@ -65,12 +65,15 @@
 
 ## LLM evaluation
 - [x] Fixed LLM evaluation scenario set + schema validator
+- [x] Reproducible real-Gemini evaluation runner
+- [x] Manual-review gating before final metric aggregation
+- [x] Required-tool coverage + reproducibility metadata
 - [x] Truthful release-readiness checker
 - [ ] Add Gemini key to local/Railway environment (never commit or paste it into chat)
 - [ ] Enable `RETURNREVIEW_LLM_ENABLED=true`
-- [ ] Run real Gemini tool-calling cases
-- [ ] Build fixed manually reviewed LLM evaluation set
-- [ ] Measure groundedness/unsupported claims/policy correctness/agreement/correction rate/latency
+- [ ] Run fixed real Gemini tool-calling cases
+- [ ] Manually review every generated evaluation row
+- [ ] Generate groundedness/unsupported-claim/policy/agreement/correction/tool/latency metrics
 
 ## Persistence
 - [x] Choose final persistent hosted storage: isolated Project Hub Postgres
