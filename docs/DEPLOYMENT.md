@@ -32,7 +32,7 @@ Provisioned:
 - no public database domain
 - application support for PostgreSQL + DB-backed media serving
 
-The API uses a Railway service-reference database URL rather than a copied password. Production persistence is not considered complete until the PostgreSQL deployment is healthy and a case + evidence survive an API redeploy.
+The API uses a Railway service-reference database URL rather than a copied password. The PostgreSQL deployment is now healthy: production startup reports `database_backend=postgresql` and `durable_persistence=True`, and both `/health` and `/readiness` return HTTP 200. Final persistence proof still requires a case + evidence to survive an API redeploy.
 
 The older Supabase App 13 foundation is retained but is not the intended production runtime database.
 
