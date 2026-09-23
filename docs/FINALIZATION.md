@@ -78,10 +78,14 @@ The checker reports only file/configuration presence. It never prints secret val
 
 A dedicated Railway Postgres service and persistent volume now exist inside the isolated ReturnReview project, and the API database URL is configured through a Railway service reference.
 
-This blocker is complete only after:
-- the API deploys successfully on PostgreSQL,
-- health/readiness confirm the database,
-- a real test case + evidence survive an API redeploy.
+Verified in production:
+- API deployment succeeded on PostgreSQL
+- startup reports `database_backend=postgresql`
+- startup reports `durable_persistence=True`
+- `/health` returns HTTP 200
+- `/readiness` returns HTTP 200
+
+The remaining persistence proof is a real case + 2–4 evidence images surviving an API redeploy.
 
 ### 2. Gemini production activation
 

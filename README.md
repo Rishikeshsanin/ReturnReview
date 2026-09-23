@@ -14,7 +14,7 @@ Both services are isolated inside the dedicated Railway **ReturnReview** project
 
 > **Current AI status:** the hosted product shell is live, but project-specific CV inference and Gemini are intentionally disabled until the real pilot dataset/checkpoint/prototype bank and Gemini API key are available. The API refuses to fabricate CV evidence.
 
-> **Current persistence status:** a dedicated Railway Postgres service and persistent volume are provisioned inside the isolated **ReturnReview** Railway project. The API is being switched from SQLite to that private Railway database using a service-reference connection; persistence is considered final only after the API reports PostgreSQL and a case + evidence survive an API redeploy. The older Supabase App 13 foundation is retained but is no longer the intended production runtime database.
+> **Current persistence status:** the production API is now running on a dedicated Railway Postgres service + persistent volume inside the isolated **ReturnReview** project. Startup reports PostgreSQL with durable persistence enabled and health/readiness pass. The final persistence proof still requires a real case + evidence to survive an API redeploy. The older Supabase App 13 foundation is retained but is no longer the intended production runtime database.
 
 ## MVP scope
 
