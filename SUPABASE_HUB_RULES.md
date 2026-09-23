@@ -2,13 +2,13 @@
 
 This file exists to satisfy the repository-side safety contract required before ReturnReview may receive any Project Hub resources.
 
-## Reserved identity
-If ReturnReview is registered in Project Hub, use exactly:
+## Registered identity
+ReturnReview is registered in Project Hub as:
+- app number: **13**
 - app slug: `return_review`
 - schema: `return_review`
 - repository: `https://github.com/Rishikeshsanin/ReturnReview`
-
-Do not assume an app number until the registry write actually occurs.
+- backend DB role: `return_review_backend`
 
 ## Isolation
 - ReturnReview may access only its own registered schema/resources plus explicitly approved shared resources.
@@ -35,4 +35,19 @@ Before the first Project Hub write:
 6. Verify RLS/security and record the resource/migration in the Hub registry where required.
 
 ## Current state
-No ReturnReview Project Hub schema, table, bucket, function, policy or app-registry entry has been created by this repository setup.
+Provisioned and verified:
+- `hub.apps` registration for App 13
+- private `return_review` schema
+- seven ReturnReview application tables
+- RLS enabled on every ReturnReview table
+- policies targeted only to `return_review_backend`
+- dedicated non-superuser/non-bypass-RLS backend login role
+- schema/table/role records in `hub.app_resources`
+
+Not created:
+- no ReturnReview tables in `public`
+- no Supabase Storage bucket
+- no edge function/RPC/realtime resource
+- no cross-app dependency
+
+The backend role password is intentionally not stored in this repository. Production activation must use the dedicated role and never the Project Hub admin/service-role credential.

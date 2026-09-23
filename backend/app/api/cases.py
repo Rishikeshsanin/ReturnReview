@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.database import get_db
@@ -15,9 +17,21 @@ from app.services.evidence_service import build_visual_evidence
 from app.services.agent_service import run_review_agent
 from app.services.audit_service import record_event
 from app.services.status_service import transition
+from app.utils.config import get_settings
 
 router = APIRouter(prefix="/api/cases", tags=["cases"])
 ALLOWED_VIEWS = {"front", "back", "left", "right", "top", "bottom", "unspecified"}
+settings = get_settings()
+
+
+def _read_cached_media(relative_path: str | None) -> bytes | None:
+    if not relative_path:
+        return None
+    path = Path(relative_path)
+    absolute = path if path.is_absolute() else settings.storage_path / path
+    if not absolute.exists() or not absolute.is_file():
+        return None
+    return absolute.read_bytes()
 
 
 @router.post("", response_model=CaseOut, status_code=201)
@@ -57,7 +71,7 @@ def get_case(case_id: str, db: Session = Depends(get_db)):
                 "quality_score": i.quality_score,
                 "quality_warning": i.quality_warning,
                 "image_path": i.image_path,
-                "image_url": f"/media/{i.image_path}",
+                "image_url": f"/api/cases/{case.id}/images/{i.id}/content",
             }
             for i in case.images
         ],
@@ -74,6 +88,35 @@ def get_case(case_id: str, db: Session = Depends(get_db)):
             for e in events
         ],
     }
+
+
+@router.get("/{case_id}/images/{image_id}/content")
+def get_image_content(case_id: str, image_id: str, db: Session = Depends(get_db)):
+    image = db.scalar(
+        select(CaseImage).where(CaseImage.id == image_id, CaseImage.case_id == case_id)
+    )
+    if image is None:
+        raise HTTPException(404, "Case image not found")
+    payload = image.image_blob or _read_cached_media(image.image_path)
+    if not payload:
+        raise HTTPException(404, "Stored image content is unavailable")
+    return Response(content=payload, media_type=image.content_type or "image/jpeg")
+
+
+@router.get("/{case_id}/findings/{finding_id}/overlay")
+def get_finding_overlay(case_id: str, finding_id: str, db: Session = Depends(get_db)):
+    finding = db.scalar(
+        select(DefectFinding)
+        .join(CVInspection, DefectFinding.inspection_id == CVInspection.id)
+        .join(CaseImage, CVInspection.case_image_id == CaseImage.id)
+        .where(DefectFinding.id == finding_id, CaseImage.case_id == case_id)
+    )
+    if finding is None:
+        raise HTTPException(404, "Defect overlay not found")
+    payload = finding.mask_blob or _read_cached_media(finding.mask_path)
+    if not payload:
+        raise HTTPException(404, "Stored overlay content is unavailable")
+    return Response(content=payload, media_type=finding.mask_content_type or "image/jpeg")
 
 
 @router.post("/{case_id}/images", status_code=201)
@@ -101,6 +144,8 @@ async def upload_image(
         case_id=case.id,
         view_label=view_label,
         image_path=stored["path"],
+        content_type=stored["content_type"],
+        image_blob=stored["blob"],
         width=stored["width"],
         height=stored["height"],
         quality_score=stored["quality_score"],
@@ -111,7 +156,15 @@ async def upload_image(
     db.flush()
     record_event(db, case.id, "IMAGE_UPLOADED", {"image_id": row.id, "view_label": view_label})
     db.commit()
-    return {"image_id": row.id, **stored}
+    return {
+        "image_id": row.id,
+        "path": stored["path"],
+        "content_type": stored["content_type"],
+        "width": stored["width"],
+        "height": stored["height"],
+        "quality_score": stored["quality_score"],
+        "quality_warning": stored["quality_warning"],
+    }
 
 
 @router.post("/{case_id}/inspect")
@@ -127,7 +180,7 @@ def inspect_case(case_id: str, db: Session = Depends(get_db)):
         for image in case.images:
             if image.inspection:
                 continue
-            result = cv_service.inspect(image.image_path, image.id)
+            result = cv_service.inspect(image.image_path, image.id, image.image_blob)
             inspection = CVInspection(
                 case_image_id=image.id,
                 model_version=result["model_version"],
@@ -145,6 +198,8 @@ def inspect_case(case_id: str, db: Session = Depends(get_db)):
                     confidence=finding["confidence"],
                     bbox_json=finding["bbox"],
                     mask_path=finding.get("mask_path"),
+                    mask_content_type=finding.get("mask_content_type"),
+                    mask_blob=finding.get("mask_blob"),
                     affected_area_percent=finding["affected_area_percent"],
                 ))
         case.status = transition(case.status, CaseStatus.CV_COMPLETE.value)

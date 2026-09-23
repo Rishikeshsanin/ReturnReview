@@ -89,7 +89,7 @@ export default function CaseClient({caseId,initial}:{caseId:string;initial:CaseD
         {findings.length>0&&<>
           <div className="section-row" style={{marginTop:22}}><h3>Detected regions</h3><span className="pill">{findings.length} findings</span></div>
           <div className="image-grid">{findings.map((f:any)=><figure className="image-card" key={f.finding_id}>
-            {f.mask_path?<img src={`${API}/media/${f.mask_path}`} alt={`AI overlay ${f.defect_type}`} />:<div className="evidence small">Overlay unavailable</div>}
+            {f.mask_url?<img src={`${API}${f.mask_url}`} alt={`AI overlay ${f.defect_type}`} />:f.mask_path?<img src={`${API}/media/${f.mask_path}`} alt={`AI overlay ${f.defect_type}`} />:<div className="evidence small">Overlay unavailable</div>}
             <figcaption><strong>{f.defect_type}</strong><span>{Math.round((f.confidence||0)*100)}%</span></figcaption>
             <small className="muted">Affected visible image area: {f.affected_area_percent?.toFixed?.(2) ?? "n/a"}%</small>
           </figure>)}</div>

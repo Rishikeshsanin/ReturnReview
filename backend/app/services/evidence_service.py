@@ -50,6 +50,7 @@ def build_visual_evidence(db: Session, case: ReturnCase) -> VisualEvidence:
                 confidence=f.confidence,
                 bbox=f.bbox_json,
                 mask_path=f.mask_path,
+                mask_url=f"/api/cases/{case.id}/findings/{f.id}/overlay" if f.mask_blob or f.mask_path else None,
                 affected_area_percent=f.affected_area_percent,
             ))
             if f.defect_type == "unknown":

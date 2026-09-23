@@ -33,7 +33,13 @@
 - [x] Backend deployed and healthchecked on Railway
 - [x] Frontend deployed and healthchecked on Railway
 - [x] Production CORS includes exact hosted frontend origin
-- [x] Shared Supabase remains unmodified
+- [x] Supabase Hub safety re-check completed before writes
+- [x] ReturnReview registered as Supabase Project Hub App 13
+- [x] Private `return_review` schema + seven tables provisioned
+- [x] Dedicated least-privilege `return_review_backend` role provisioned
+- [x] RLS policies + Hub resource registry verified
+- [x] DB-backed image/overlay persistence implemented in application code
+- [x] Production readiness endpoint implemented
 
 ## Blocked on real project data
 - [ ] Collect 24–30 pilot images
@@ -57,10 +63,13 @@
 - [ ] Measure groundedness/unsupported claims/policy correctness/agreement/correction rate/latency
 
 ## Persistence
-- [ ] Choose final persistent hosted storage
-- [ ] If using Project Hub, register `return_review` only after another read-only safety check
-- [ ] Create only isolated `return_review` resources with RLS; never touch other app schemas
-- [ ] Verify persistence across redeploys
+- [x] Choose final persistent hosted storage: isolated Project Hub Postgres
+- [x] Register `return_review` after read-only safety check
+- [x] Create only isolated `return_review` resources with RLS
+- [x] Register schema/tables/backend role in `hub.app_resources`
+- [ ] Securely set the dedicated `return_review_backend` password in Supabase
+- [ ] Set Railway `RETURNREVIEW_DATABASE_URL` + `RETURNREVIEW_DATABASE_SCHEMA=return_review`
+- [ ] Verify case + image persistence across an API redeploy
 
 ## Final submission
 - [ ] Full real-data E2E QA

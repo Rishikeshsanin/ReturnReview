@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     env: str = "development"
     database_url: str = "sqlite:///./returnreview.db"
+    database_schema: str | None = None
     storage_dir: str = "./storage"
     allowed_origins: str = "http://localhost:3000"
     max_upload_mb: int = 10
@@ -37,6 +38,18 @@ class Settings(BaseSettings):
     @property
     def origins(self) -> list[str]:
         return [x.strip() for x in self.allowed_origins.split(",") if x.strip()]
+
+    @property
+    def database_backend(self) -> str:
+        if self.database_url.startswith("sqlite"):
+            return "sqlite"
+        if self.database_url.startswith(("postgresql", "postgres")):
+            return "postgresql"
+        return "other"
+
+    @property
+    def durable_persistence(self) -> bool:
+        return self.database_backend == "postgresql"
 
 
 @lru_cache

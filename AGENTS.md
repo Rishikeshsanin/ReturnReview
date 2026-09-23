@@ -33,4 +33,12 @@ This repository is the only application scope for **ReturnReview**.
 8. Run security checks after meaningful database/RLS changes.
 
 ## Current persistence state
-ReturnReview currently uses local SQLite/local storage. The shared Supabase Project Hub is not connected to the application yet. The canonical Railway deployment remains the standalone `ReturnReview` project.
+ReturnReview is registered as Supabase Project Hub **App 13** with private schema `return_review`.
+
+Provisioned ReturnReview-owned resources:
+- seven tables in `return_review`
+- dedicated `return_review_backend` login role
+- RLS policies scoped to that role
+- Hub resource-registry entries
+
+Production Railway remains on SQLite until the dedicated database-role password and connection URL are set securely. Never substitute the Project Hub `postgres` password or service-role/secret key. The canonical Railway runtime remains the standalone `ReturnReview` project.

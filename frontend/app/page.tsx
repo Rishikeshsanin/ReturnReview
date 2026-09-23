@@ -2,15 +2,29 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 
 type CaseRow={id:string;external_case_id:string;product_name:string;status:string;created_at:string};
+type Readiness={
+  status:string;
+  database?:{ok:boolean;backend:string;durable:boolean};
+  cv_ready?:boolean;
+  llm_ready?:boolean;
+  blockers?:string[];
+};
 
 async function getCases():Promise<CaseRow[]>{
   try{return await api<CaseRow[]>("/api/cases")}catch{return []}
 }
 
+async function getReadiness():Promise<Readiness>{
+  try{return await api<Readiness>("/readiness")}catch{return {status:"unavailable",blockers:["api_unavailable"]}}
+}
+
 export default async function Home(){
-  const cases=await getCases();
+  const [cases,readiness]=await Promise.all([getCases(),getReadiness()]);
   const ready=cases.filter(c=>c.status==="READY_FOR_REVIEW").length;
   const closed=cases.filter(c=>["APPROVED","REJECTED"].includes(c.status)).length;
+  const persistence=readiness.database?.durable===true;
+  const cvReady=readiness.cv_ready===true;
+  const llmReady=readiness.llm_ready===true;
   return <>
     <section className="hero">
       <div className="card">
@@ -26,6 +40,17 @@ export default async function Home(){
         <div className="pill">Human-in-the-loop</div>
       </div>
     </section>
+
+    <section className="card" style={{marginBottom:16}}>
+      <div className="section-row"><h2>System readiness</h2><span className="pill">{readiness.status}</span></div>
+      <div className="stats">
+        <div className="stat"><span className="muted">Persistent evidence</span><strong>{persistence?"Ready":"Setup"}</strong></div>
+        <div className="stat"><span className="muted">Computer vision</span><strong>{cvReady?"Ready":"Awaiting data"}</strong></div>
+        <div className="stat"><span className="muted">Gemini review</span><strong>{llmReady?"Ready":"Disabled"}</strong></div>
+      </div>
+      {(readiness.blockers?.length||0)>0&&<p className="muted">Open items: {readiness.blockers?.join(" · ").replaceAll("_"," ")}</p>}
+    </section>
+
     <section className="stats">
       <div className="card stat"><span className="muted">Total cases</span><strong>{cases.length}</strong></div>
       <div className="card stat"><span className="muted">Ready for review</span><strong>{ready}</strong></div>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from time import perf_counter
+import io
 import numpy as np
 from PIL import Image, ImageColor
 from app.utils.config import get_settings
@@ -33,25 +34,37 @@ class CVService:
             self._yolo = YOLO(str(model_path))
         return self._yolo
 
-    def _resolve_image(self, image_path: str) -> Path:
+    def _resolve_image(self, image_path: str, image_blob: bytes | None = None) -> Path:
         path = Path(image_path)
-        return path if path.is_absolute() else settings.storage_path / path
+        absolute = path if path.is_absolute() else settings.storage_path / path
+        if absolute.exists():
+            return absolute
+        if image_blob is None:
+            raise CVUnavailable("Stored image content is unavailable")
+        absolute.parent.mkdir(parents=True, exist_ok=True)
+        absolute.write_bytes(image_blob)
+        return absolute
 
-    def _save_overlay(self, image: Image.Image, mask: np.ndarray, image_id: str, idx: int) -> str:
+    def _save_overlay(self, image: Image.Image, mask: np.ndarray, image_id: str, idx: int) -> tuple[str, bytes]:
         mask_img = Image.fromarray((mask > 0.5).astype(np.uint8) * 255).resize(image.size)
         tint = Image.new("RGBA", image.size, ImageColor.getrgb("#ff3b30") + (0,))
         tint.putalpha(mask_img.point(lambda p: 105 if p else 0))
         overlay = Image.alpha_composite(image.convert("RGBA"), tint).convert("RGB")
+
         relative = Path("overlays") / image_id / f"finding-{idx}.jpg"
         absolute = settings.storage_path / relative
         absolute.parent.mkdir(parents=True, exist_ok=True)
-        overlay.save(absolute, "JPEG", quality=92)
-        return relative.as_posix()
 
-    def inspect(self, image_path: str, image_id: str) -> dict:
+        buf = io.BytesIO()
+        overlay.save(buf, "JPEG", quality=92)
+        payload = buf.getvalue()
+        absolute.write_bytes(payload)
+        return relative.as_posix(), payload
+
+    def inspect(self, image_path: str, image_id: str, image_blob: bytes | None = None) -> dict:
         started = perf_counter()
         model = self._load_yolo()
-        absolute = self._resolve_image(image_path)
+        absolute = self._resolve_image(image_path, image_blob)
         image = Image.open(absolute).convert("RGB")
         try:
             verified, similarity = embedding_service.verify_category(image)
@@ -83,7 +96,7 @@ class CVService:
                     raise CVUnavailable(str(exc)) from exc
                 resized = np.asarray(Image.fromarray((mask > 0.5).astype(np.uint8)).resize(image.size))
                 affected = float(np.count_nonzero(resized) / resized.size * 100.0)
-                overlay_path = self._save_overlay(image, mask, image_id, idx)
+                overlay_path, overlay_blob = self._save_overlay(image, mask, image_id, idx)
                 findings.append({
                     "image_id": image_id,
                     "defect_type": defect_type,
@@ -93,6 +106,8 @@ class CVService:
                     "class_scores": class_scores,
                     "bbox": xyxy,
                     "mask_path": overlay_path,
+                    "mask_content_type": "image/jpeg",
+                    "mask_blob": overlay_blob,
                     "affected_area_percent": affected,
                 })
 

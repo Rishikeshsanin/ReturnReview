@@ -44,10 +44,17 @@ async def validate_and_store(case_id: str, upload: UploadFile) -> dict:
     target.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid4()}.jpg"
     path = target / filename
-    image.save(path, format="JPEG", quality=94)
+
+    buf = io.BytesIO()
+    image.save(buf, format="JPEG", quality=94)
+    normalized = buf.getvalue()
+    path.write_bytes(normalized)
+
     relative = path.relative_to(settings.storage_path).as_posix()
     return {
         "path": relative,
+        "content_type": "image/jpeg",
+        "blob": normalized,
         "width": width,
         "height": height,
         "quality_score": min(1.0, blur / 300.0),

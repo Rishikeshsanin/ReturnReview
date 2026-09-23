@@ -23,18 +23,20 @@ Verified configuration:
 
 ### Current persistence status
 
-The backend currently uses ordinary local SQLite/file storage inside its Railway container:
+The final persistence architecture is now provisioned in the shared Supabase Project Hub, isolated to **App 13 / `return_review`**.
 
-```text
-RETURNREVIEW_DATABASE_URL=sqlite:///./returnreview.db
-RETURNREVIEW_STORAGE_DIR=./storage
-```
+Provisioned:
+- private `return_review` schema
+- seven application tables
+- RLS on every ReturnReview table
+- dedicated `return_review_backend` role with no cross-app privileges
+- schema/table/role ownership registered in `hub.app_resources`
+- persistent evidence/overlay byte columns
+- application support for Postgres + DB-backed media serving
 
-This is **not claimed as persistent across redeploys**.
+The live Railway API still uses its previous SQLite URL until the dedicated role credential is set securely. This is deliberate: production does **not** claim durable persistence until the real connection is activated and verified across a redeploy.
 
-A 1 GB Railway volume was staged and committed during deployment work, but Railway's authoritative service configuration still reported `hasVolume=false` afterward. The project therefore treats hosted persistence as unfinished rather than pretending the volume is active.
-
-The shared Supabase Project Hub remains untouched except for read-only inspection.
+See `docs/PERSISTENCE.md` for the secret-only activation and rollback procedure.
 
 ### Current feature flags
 

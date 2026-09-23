@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
-from sqlalchemy import String, Text, Float, Boolean, ForeignKey, DateTime, JSON
+from sqlalchemy import String, Text, Float, Boolean, ForeignKey, DateTime, JSON, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -44,6 +44,8 @@ class CaseImage(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     case_id: Mapped[str] = mapped_column(ForeignKey("return_cases.id", ondelete="CASCADE"), index=True)
     image_path: Mapped[str] = mapped_column(Text)
+    content_type: Mapped[str] = mapped_column(String(80), default="image/jpeg")
+    image_blob: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     view_label: Mapped[str] = mapped_column(String(40), default="unspecified")
     width: Mapped[int] = mapped_column(default=0)
     height: Mapped[int] = mapped_column(default=0)
@@ -76,6 +78,8 @@ class DefectFinding(Base):
     confidence: Mapped[float] = mapped_column(Float, default=0.0)
     bbox_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
     mask_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    mask_content_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    mask_blob: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     affected_area_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     inspection: Mapped["CVInspection"] = relationship(back_populates="findings")
