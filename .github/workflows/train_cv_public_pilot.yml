@@ -93,9 +93,9 @@ jobs:
           python scripts/subset_yolo_seg_dataset.py \
             --input "$CV_WORK/binary-damage" \
             --output "$CV_WORK/pilot" \
-            --max-train 160 \
-            --max-val 40 \
-            --max-test 40 \
+            --max-train 320 \
+            --max-val 60 \
+            --max-test 60 \
             --seed 20260924
 
       - name: Validate segmentation dataset
@@ -108,8 +108,8 @@ jobs:
           python scripts/train_segmentation.py \
             --data "$CV_WORK/pilot/data.yaml" \
             --model yolo11n-seg.pt \
-            --epochs 12 \
-            --imgsz 320 \
+            --epochs 30 \
+            --imgsz 416 \
             --batch 8 \
             --device cpu \
             --workers 2 \
@@ -129,9 +129,19 @@ jobs:
             --data "$CV_WORK/pilot/data.yaml" \
             --output "$CV_EVAL/segmentation_map_metrics.json"
 
-      - name: Build semantic OpenCLIP prototype bank
+      - name: Prepare train-only OpenCLIP reference sets
         run: |
-          python scripts/build_semantic_prototypes.py \
+          python scripts/prepare_clip_reference_sets.py \
+            --source "$RAW_DATASET" \
+            --output "$CV_WORK/clip-references" \
+            --category-count 48 \
+            --defect-count 48 \
+            --seed 20260924
+
+      - name: Build hybrid OpenCLIP prototype bank
+        run: |
+          python scripts/build_hybrid_prototypes.py \
+            --root "$CV_WORK/clip-references" \
             --output "$CV_WORK/prototypes.npz" \
             --manifest "$CV_EVAL/prototypes_manifest.json"
 
@@ -141,9 +151,9 @@ jobs:
             --source "$RAW_DATASET" \
             --negative-images "$CV_WORK/coco128" \
             --output "$CV_WORK/clip-eval" \
-            --max-positive-per-split 80 \
+            --max-positive-per-split 100 \
             --max-negative-per-split 64 \
-            --max-crops-per-class-split 80 \
+            --max-crops-per-class-split 100 \
             --seed 20260924
 
       - name: Calibrate and evaluate product verification
