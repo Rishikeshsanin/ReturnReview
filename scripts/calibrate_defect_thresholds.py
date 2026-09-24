@@ -72,7 +72,7 @@ def main() -> None:
         raise SystemExit("No defect validation samples found")
 
     best = None
-    for similarity in np.linspace(-0.2, 0.8, 201):
+    for similarity in np.linspace(0.0, 0.8, 161):
         for margin_threshold in np.linspace(0.0, 0.20, 101):
             correct = 0
             for row in rows:
