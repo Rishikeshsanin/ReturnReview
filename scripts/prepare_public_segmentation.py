@@ -119,8 +119,8 @@ def main() -> None:
         if located is None:
             continue
         images_dir, labels_dir = located
-        out_images = output / split / "images"
-        out_labels = output / split / "labels"
+        out_images = output / "images" / split
+        out_labels = output / "labels" / split
         out_images.mkdir(parents=True)
         out_labels.mkdir(parents=True)
 
@@ -161,11 +161,11 @@ def main() -> None:
         shutil.rmtree(output)
         raise SystemExit("No accepted polygon annotations were found")
 
-    yaml_lines = [f"path: {output.as_posix()}", "train: train/images"]
-    if (output / "val" / "images").exists():
-        yaml_lines.append("val: val/images")
-    if (output / "test" / "images").exists():
-        yaml_lines.append("test: test/images")
+    yaml_lines = [f"path: {output.as_posix()}", "train: images/train"]
+    if (output / "images" / "val").exists():
+        yaml_lines.append("val: images/val")
+    if (output / "images" / "test").exists():
+        yaml_lines.append("test: images/test")
     yaml_lines += ["names:", "  0: damage"]
     (output / "data.yaml").write_text("\n".join(yaml_lines) + "\n", encoding="utf-8")
 

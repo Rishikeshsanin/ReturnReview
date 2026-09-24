@@ -49,6 +49,8 @@
 - [x] Leakage-safe physical/session split script
 - [x] Public source provenance list with verified task/license metadata
 - [x] Strict YOLO segmentation export validator
+- [x] Reproducible licensed public-data CV pilot training workflow
+- [x] Semantic OpenCLIP prototype + threshold calibration/evaluation tooling
 
 ## Blocked on real project data
 - [ ] Collect 24–30 pilot images

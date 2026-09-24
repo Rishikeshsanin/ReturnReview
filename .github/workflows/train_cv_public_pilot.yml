@@ -1,0 +1,245 @@
+name: Train CV Public Pilot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - data/cv_training_trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  train-public-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      ROBOFLOW_API_KEY: ${{ secrets.ROBOFLOW_API_KEY }}
+      CV_WORK: artifacts/cv-work
+      CV_EVAL: artifacts/evaluation
+      CV_RELEASE: artifacts/cv-release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require private Roboflow download credential
+        run: |
+          if [ -z "$ROBOFLOW_API_KEY" ]; then
+            echo "::error::ROBOFLOW_API_KEY repository secret is required to download the public Roboflow export."
+            exit 2
+          fi
+
+      - name: Install CV training dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-cv.txt
+          pip install "roboflow>=1.2,<2"
+
+      - name: Download pinned public instance-segmentation source
+        run: |
+          mkdir -p "$CV_WORK" "$CV_EVAL"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from roboflow import Roboflow
+
+          location = Path("artifacts/cv-work/raw-roboflow").resolve()
+          rf = Roboflow(api_key=os.environ["ROBOFLOW_API_KEY"])
+          project = rf.workspace("tracking-u78ba").project("box-fsrpn")
+          version = project.version(16)
+          dataset = version.download("yolov8", location=str(location), overwrite=True)
+          actual = Path(dataset.location).resolve()
+          if not (actual / "data.yaml").is_file():
+              raise SystemExit(f"Downloaded export has no data.yaml: {actual}")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
+              handle.write(f"RAW_DATASET={actual}\n")
+          print(f"raw_dataset={actual}")
+          PY
+
+      - name: Download generic non-box negatives
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import urllib.request
+          import zipfile
+
+          target = Path("artifacts/cv-work/coco128.zip")
+          url = "https://ultralytics.com/assets/coco128.zip"
+          urllib.request.urlretrieve(url, target)
+          with zipfile.ZipFile(target) as zf:
+              zf.extractall("artifacts/cv-work")
+          images = list(Path("artifacts/cv-work/coco128").rglob("*.jpg"))
+          if len(images) < 20:
+              raise SystemExit(f"Expected generic negative images; found only {len(images)}")
+          print(f"generic_negative_images={len(images)}")
+          PY
+
+      - name: Convert source polygons to binary damage segmentation
+        run: |
+          python scripts/prepare_public_segmentation.py \
+            --input "$RAW_DATASET" \
+            --output "$CV_WORK/binary-damage" \
+            --include-classes tear,squeeze \
+            --source-id roboflow_box_damage_segmentation_v16 \
+            --source-url https://universe.roboflow.com/tracking-u78ba/box-fsrpn \
+            --license "CC BY 4.0"
+
+      - name: Build deterministic CPU pilot subset
+        run: |
+          python scripts/subset_yolo_seg_dataset.py \
+            --input "$CV_WORK/binary-damage" \
+            --output "$CV_WORK/pilot" \
+            --max-train 160 \
+            --max-val 40 \
+            --max-test 40 \
+            --seed 20260924
+
+      - name: Validate segmentation dataset
+        run: |
+          python scripts/validate_yolo_seg_dataset.py "$CV_WORK/pilot" \
+            --output "$CV_EVAL/dataset_validation.json"
+
+      - name: Train YOLO11n segmentation pilot
+        run: |
+          python scripts/train_segmentation.py \
+            --data "$CV_WORK/pilot/data.yaml" \
+            --model yolo11n-seg.pt \
+            --epochs 12 \
+            --imgsz 320 \
+            --batch 8 \
+            --device cpu \
+            --workers 2 \
+            --seed 20260924 \
+            --project "$CV_WORK/runs" \
+            --name damage-seg
+          test -s "$CV_WORK/runs/damage-seg/weights/best.pt"
+
+      - name: Evaluate held-out segmentation
+        run: |
+          python scripts/evaluate_masks.py \
+            --model "$CV_WORK/runs/damage-seg/weights/best.pt" \
+            --root "$CV_WORK/pilot" \
+            --output "$CV_EVAL/segmentation_pixel_metrics.json"
+          python scripts/evaluate_segmentation.py \
+            --model "$CV_WORK/runs/damage-seg/weights/best.pt" \
+            --data "$CV_WORK/pilot/data.yaml" \
+            --output "$CV_EVAL/segmentation_map_metrics.json"
+
+      - name: Build semantic OpenCLIP prototype bank
+        run: |
+          python scripts/build_semantic_prototypes.py \
+            --output "$CV_WORK/prototypes.npz" \
+            --manifest "$CV_EVAL/prototypes_manifest.json"
+
+      - name: Prepare leakage-safe CLIP calibration/test sets
+        run: |
+          python scripts/prepare_clip_eval_sets.py \
+            --source "$RAW_DATASET" \
+            --negative-images "$CV_WORK/coco128" \
+            --output "$CV_WORK/clip-eval" \
+            --max-positive-per-split 80 \
+            --max-negative-per-split 64 \
+            --max-crops-per-class-split 80 \
+            --seed 20260924
+
+      - name: Calibrate and evaluate product verification
+        run: |
+          python scripts/calibrate_verification_threshold.py \
+            --validation-root "$CV_WORK/clip-eval/category/val" \
+            --prototypes "$CV_WORK/prototypes.npz" \
+            --output "$CV_EVAL/category_calibration.json"
+          CATEGORY_THRESHOLD=$(python -c 'import json; print(json.load(open("artifacts/evaluation/category_calibration.json"))["category_calibration"]["recommended_threshold"])')
+          echo "CATEGORY_THRESHOLD=$CATEGORY_THRESHOLD" >> "$GITHUB_ENV"
+
+      - name: Evaluate held-out product verification
+        run: |
+          python scripts/evaluate_verification.py \
+            --test-root "$CV_WORK/clip-eval/category/test" \
+            --prototypes "$CV_WORK/prototypes.npz" \
+            --threshold "$CATEGORY_THRESHOLD" \
+            --output "$CV_EVAL/category_metrics.json"
+
+      - name: Calibrate semantic defect rejection
+        run: |
+          python scripts/calibrate_defect_thresholds.py \
+            --validation-root "$CV_WORK/clip-eval/defects/val" \
+            --prototypes "$CV_WORK/prototypes.npz" \
+            --output "$CV_EVAL/defect_calibration.json"
+          python - <<'PY'
+          import json, os
+          data = json.load(open("artifacts/evaluation/defect_calibration.json"))
+          cfg = data["defect_calibration"]
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
+              handle.write(f"DEFECT_THRESHOLD={cfg['similarity_threshold']}\n")
+              handle.write(f"DEFECT_MARGIN={cfg['margin_threshold']}\n")
+          PY
+
+      - name: Evaluate held-out semantic defect classification
+        run: |
+          python scripts/evaluate_semantic_defects.py \
+            --test-root "$CV_WORK/clip-eval/defects/test" \
+            --prototypes "$CV_WORK/prototypes.npz" \
+            --similarity-threshold "$DEFECT_THRESHOLD" \
+            --margin-threshold "$DEFECT_MARGIN" \
+            --output "$CV_EVAL/defect_metrics.json"
+
+      - name: Assemble truthful CV metric artifact
+        run: |
+          python scripts/assemble_cv_metrics.py \
+            --pixel "$CV_EVAL/segmentation_pixel_metrics.json" \
+            --map "$CV_EVAL/segmentation_map_metrics.json" \
+            --category-calibration "$CV_EVAL/category_calibration.json" \
+            --category-test "$CV_EVAL/category_metrics.json" \
+            --defect-calibration "$CV_EVAL/defect_calibration.json" \
+            --defect-test "$CV_EVAL/defect_metrics.json" \
+            --dataset-validation "$CV_EVAL/dataset_validation.json" \
+            --output "$CV_EVAL/cv_metrics.json"
+
+      - name: Package exact candidate model
+        run: |
+          python scripts/package_cv_release.py \
+            --checkpoint "$CV_WORK/runs/damage-seg/weights/best.pt" \
+            --prototypes "$CV_WORK/prototypes.npz" \
+            --model-version "cv-public-pilot-${GITHUB_RUN_NUMBER}" \
+            --category-threshold "$CATEGORY_THRESHOLD" \
+            --defect-threshold "$DEFECT_THRESHOLD" \
+            --defect-margin "$DEFECT_MARGIN" \
+            --output-dir "$CV_RELEASE"
+          cp "$CV_EVAL/cv_metrics.json" "$CV_RELEASE/cv_metrics.json"
+          cp "$CV_EVAL/prototypes_manifest.json" "$CV_RELEASE/prototypes_manifest.json"
+          cp "$CV_WORK/clip-eval/eval_manifest.json" "$CV_RELEASE/eval_manifest.json"
+          cp "$CV_EVAL/dataset_validation.json" "$CV_RELEASE/dataset_validation.json"
+
+      - name: Upload candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: returnreview-cv-public-pilot-${{ github.run_number }}
+          path: |
+            artifacts/cv-release/
+            artifacts/evaluation/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish immutable prerelease candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="cv-public-pilot-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" \
+            "$CV_RELEASE/best.pt" \
+            "$CV_RELEASE/prototypes.npz" \
+            "$CV_RELEASE/release_manifest.json" \
+            "$CV_RELEASE/cv_metrics.json" \
+            "$CV_RELEASE/prototypes_manifest.json" \
+            "$CV_RELEASE/eval_manifest.json" \
+            "$CV_RELEASE/dataset_validation.json" \
+            --target "$GITHUB_SHA" \
+            --title "ReturnReview CV public pilot ${GITHUB_RUN_NUMBER}" \
+            --notes "Automated public-data CV pilot candidate. Prerelease only; inspect held-out metrics before production activation. Source provenance and limitations are included in the release artifacts." \
+            --prerelease
+          echo "CV_RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "published_prerelease=$TAG"
