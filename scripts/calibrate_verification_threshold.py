@@ -7,6 +7,7 @@ Expected validation layout:
 """
 from __future__ import annotations
 import argparse
+import json
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -20,6 +21,7 @@ def main():
     parser.add_argument("--prototypes", required=True)
     parser.add_argument("--model", default="ViT-B-32")
     parser.add_argument("--pretrained", default="laion2b_s34b_b79k")
+    parser.add_argument("--output", default="artifacts/evaluation/category_calibration.json")
     args = parser.parse_args()
 
     import torch
@@ -54,10 +56,21 @@ def main():
         if best is None or accuracy > best[0]:
             best = (accuracy, float(threshold))
 
-    print(f"validation_samples={len(samples)}")
-    print(f"best_validation_accuracy={best[0]:.6f}")
-    print(f"recommended_threshold={best[1]:.6f}")
-    print("Record this threshold with the dataset/model version. Evaluate it only once on the held-out test split.")
+    payload = {
+        "category_calibration": {
+            "validation_samples": len(samples),
+            "validation_accuracy": best[0],
+            "recommended_threshold": best[1],
+            "positive_samples": sum(expected for _, expected in samples),
+            "negative_samples": sum(not expected for _, expected in samples),
+        },
+        "provenance": "Threshold selected using validation positives and generic non-box negatives only.",
+    }
+    out = Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(payload["category_calibration"], indent=2))
+    print(out)
 
 
 if __name__ == "__main__":
