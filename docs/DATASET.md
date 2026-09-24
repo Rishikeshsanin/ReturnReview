@@ -81,3 +81,10 @@ treated as a mask.
 
 Public data supplements the project-controlled pilot; it does not remove the
 need for leakage review or held-out evaluation.
+
+
+## Automated public-pilot bootstrap
+
+For the reproducible licensed public-data bootstrap, see `docs/CV_PUBLIC_PILOT.md`.
+
+The automated pilot is deliberately separate from the 28-image project-controlled capture. Public-pilot metrics may be used to validate the engineering pipeline, but they must not be described as metrics from project-controlled data.
