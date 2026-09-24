@@ -72,11 +72,28 @@ def build_evidence(row: dict) -> tuple[VisualEvidence, str]:
     return evidence, str(scenario.get("customer_reason") or "")
 
 
+def _is_hard_quota_gemini_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return any(
+        marker in message
+        for marker in (
+            "generaterequestsperdayperprojectpermodel",
+            "free_tier_requests",
+            "exceeded your current quota",
+            "check your plan and billing details",
+        )
+    )
+
+
 def _is_transient_gemini_error(exc: Exception) -> bool:
     code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    if code == 429 and _is_hard_quota_gemini_error(exc):
+        return False
     if code in {429, 500, 502, 503, 504}:
         return True
     message = str(exc)
+    if _is_hard_quota_gemini_error(exc):
+        return False
     return any(token in message for token in ("429", "500", "502", "503", "504"))
 
 
@@ -191,7 +208,9 @@ def main() -> None:
     generated_at_utc = datetime.now(timezone.utc).isoformat()
 
     client = genai.Client(api_key=api_key)
-    results: list[dict] = []
+    out = Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("", encoding="utf-8")
 
     for row in rows:
         review, latency_ms, tool_log = run_case(client, args.model, row)
@@ -207,19 +226,15 @@ def main() -> None:
         result["manual_reviewed"] = False
         result["manual_unsupported_claim"] = None
         result["human_corrected"] = None
-        results.append(result)
+        with out.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(result, ensure_ascii=False) + "\n")
         print(
             f"{row['case_id']}: action={review.recommended_action} "
-            f"latency_ms={latency_ms:.1f} guard={review.unsupported_claims_detected}"
+            f"latency_ms={latency_ms:.1f} guard={review.unsupported_claims_detected}",
+            flush=True,
         )
 
-    out = Path(args.output)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(
-        "\n".join(json.dumps(row, ensure_ascii=False) for row in results) + "\n",
-        encoding="utf-8",
-    )
-    print(f"wrote {out}")
+    print(f"wrote {out}", flush=True)
     print(
         "Manual review is still required. Set manual_reviewed=true and fill "
         "manual_unsupported_claim + human_corrected for every row, then run "
