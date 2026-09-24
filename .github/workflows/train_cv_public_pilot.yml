@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - data/cv_training_trigger.txt
+      - .github/cv_training_trigger.txt
 
 permissions:
   contents: write
