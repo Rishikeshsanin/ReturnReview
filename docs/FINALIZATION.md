@@ -104,7 +104,7 @@ Reviewed LLM metrics:
 - grounding-guard recall on the one human-identified unsupported claim: 0%
 - average latency: 14.39 seconds
 
-The weak guard-recall result is intentionally reported rather than hidden; it identifies a concrete improvement area before final submission.
+The weak guard-recall result is intentionally reported rather than hidden. The reviewed failure led to a regression fix that now rejects confidence-complement arithmetic, and category-verification failure is deterministically normalized to `insufficient_evidence`. The historical metric remains unchanged; improvement must be demonstrated by a future real rerun rather than by rewriting the baseline.
 
 ### 3. Real CV artifacts
 

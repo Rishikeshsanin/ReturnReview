@@ -46,7 +46,7 @@ export default async function EvaluationPage(){
           <div className="item"><strong>Guard recall on unsupported claims</strong><div className="muted">{pct(llm.grounding_guard_recall_on_unsupported)}</div></div>
           <div className="item"><strong>Average latency</strong><div className="muted">{(llm.average_latency_ms/1000).toFixed(2)} s</div></div>
         </div>
-        <p className="muted" style={{marginTop:16}}>The guard recall is shown honestly: the human reviewer found one unsupported confidence interpretation that the deterministic guard did not flag.</p>
+        <p className="muted" style={{marginTop:16}}>The guard recall is the historical result from this recorded run. That review exposed a confidence-arithmetic gap; the current guard now rejects that pattern, while the original metric remains unchanged for auditability.</p>
       </>}
     </div>
 

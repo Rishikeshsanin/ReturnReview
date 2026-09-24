@@ -1,4 +1,6 @@
 from __future__ import annotations
+import re
+
 from app.models.response_models import ReviewOutput, VisualEvidence, PolicyReference
 
 PROHIBITED_UNSUPPORTED_PHRASES = (
@@ -38,10 +40,21 @@ def validate_review(
     combined = " ".join(
         [review.case_summary, review.review_status]
         + [x.finding for x in review.visual_findings]
+        + list(review.missing_information)
+        + list(review.uncertainties)
     ).lower()
     for phrase in PROHIBITED_UNSUPPORTED_PHRASES:
         if phrase in combined:
             problems.append(f"Unsupported causal/sensitive claim detected: '{phrase}'.")
+
+    confidence_complement = re.search(
+        r"\b(?:leaving|means?|implies?)\s+(?:an?\s+)?\d+(?:\.\d+)?%\s+(?:margin\s+of\s+)?uncertainty\b",
+        combined,
+    )
+    if confidence_complement and "confidence" in combined:
+        problems.append(
+            "Unsupported confidence arithmetic detected: model confidence must not be converted into complementary uncertainty."
+        )
 
     if review.policy_reference:
         if policy is None or review.policy_reference.policy_id != policy.policy_id:
@@ -51,10 +64,21 @@ def validate_review(
         safe = review.model_copy(deep=True)
         safe.unsupported_claims_detected = True
         safe.uncertainties = list(dict.fromkeys([*safe.uncertainties, *problems]))
-        safe.recommended_action = "manual_review"
-        safe.review_status = "Grounding guard flagged the draft for human review."
+        safe.recommended_action = (
+            "insufficient_evidence" if not evidence.category_verified else "manual_review"
+        )
+        safe.review_status = (
+            "Category verification incomplete; evidence is insufficient for a visual-damage review."
+            if not evidence.category_verified
+            else "Grounding guard flagged the draft for human review."
+        )
         return safe
 
     safe = review.model_copy(deep=True)
     safe.unsupported_claims_detected = False
+    if not evidence.category_verified:
+        safe.recommended_action = "insufficient_evidence"
+        safe.review_status = (
+            "Category verification incomplete; evidence is insufficient for a visual-damage review."
+        )
     return safe
