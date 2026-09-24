@@ -29,25 +29,28 @@ After deployment verify:
 
 Then run the redeploy persistence proof described in `docs/PERSISTENCE.md`.
 
-## Part B — Gemini
+## Part B — Gemini — activated
 
-Gemini still requires one private backend secret:
+Gemini is now activated in production. The private backend secret remains stored only on `returnreview-api`:
 
 Railway → **ReturnReview** → **returnreview-api** → Variables
 
 ~~~text
 RETURNREVIEW_GEMINI_API_KEY=<private key>
 RETURNREVIEW_GEMINI_MODEL=gemini-3.8-flash
+RETURNREVIEW_GEMINI_FALLBACK_MODEL=gemini-3.5-flash
 RETURNREVIEW_LLM_ENABLED=true
 ~~~
 
 The key belongs only on the backend service. Do not put it on `returnreview-web`.
 
-After redeployment:
-- `/health` should report LLM enabled
-- `/readiness` should no longer include `gemini_not_enabled`
+Verified after deployment:
+- `/health` reports LLM enabled
+- `/readiness` no longer reports `gemini_not_enabled`
+- the production primary remains `gemini-3.8-flash`
+- the configured capacity fallback is `gemini-3.5-flash`
 
-Then run the fixed Gemini evaluation and manually review every generated row before publishing metrics.
+A real six-case fixed evaluation run is preserved at `data/evaluation/runs/2026-09-24-gemini-3.5-flash-results.jsonl`. It remains intentionally unreviewed until a human completes the manual labels; do not publish final LLM metrics before that gate passes.
 
 ## Retained Supabase foundation
 
