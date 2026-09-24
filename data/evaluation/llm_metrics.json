@@ -7,7 +7,7 @@
     "grounding_guard_recall_on_unsupported": 0,
     "human_correction_rate": 0.3333333333333333,
     "required_tool_coverage": 1,
-    "average_latency_ms": 14386.868666666667
+    "average_latency_ms": 14386.868666666665
   },
   "provenance": {
     "statement": "Aggregated only after every fixed Gemini evaluation row was manually reviewed.",
