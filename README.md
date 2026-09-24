@@ -14,7 +14,7 @@ Both services are isolated inside the dedicated Railway **ReturnReview** project
 
 > **Current AI status:** the hosted product shell is live, but project-specific CV inference and Gemini are intentionally disabled until the real pilot dataset/checkpoint/prototype bank and Gemini API key are available. The API refuses to fabricate CV evidence.
 
-> **Current persistence status:** the production API is now running on a dedicated Railway Postgres service + persistent volume inside the isolated **ReturnReview** project. Startup reports PostgreSQL with durable persistence enabled and health/readiness pass. The final persistence proof still requires a real case + evidence to survive an API redeploy. The older Supabase App 13 foundation is retained but is no longer the intended production runtime database.
+> **Current persistence status:** production persistence is fully verified on dedicated Railway Postgres inside the isolated **ReturnReview** project. Startup reports PostgreSQL with durable persistence enabled, health/readiness pass, and a real case with two evidence images survived an API redeploy. The older Supabase App 13 foundation is retained but is no longer the intended production runtime database.
 
 ## MVP scope
 
@@ -68,7 +68,7 @@ Implemented and tested:
 - isolated Railway Postgres + persistent database volume
 - database-backed evidence image/overlay support + readiness reporting
 
-**The remaining hard dependencies are the real CV pilot/data pipeline, Gemini activation/evaluation, and final persistence proof across an API redeploy.**
+**The remaining hard dependencies are the real CV pilot/data pipeline and Gemini activation/evaluation.**
 
 See [`docs/CHECKLIST.md`](docs/CHECKLIST.md).
 
@@ -134,7 +134,7 @@ The earlier Supabase **Project Hub App 13** resources remain intact as an inacti
 - one product category initially
 - external visible damage only
 - CV checkpoint still requires project-specific labelled data
-- production PostgreSQL still needs final persistence proof across an API redeploy
+- production PostgreSQL persistence is verified across an API redeploy
 - image quality affects confidence
 - unseen/ambiguous defects remain `unknown`
 - no internal-damage, fraud, intent, authenticity or causal-responsibility inference
