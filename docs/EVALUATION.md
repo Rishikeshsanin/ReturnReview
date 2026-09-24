@@ -156,4 +156,23 @@ A real fixed evaluation run completed in the production API environment using:
 
 The evaluation model is explicitly recorded because the primary production model experienced repeated transient provider-capacity errors during the controlled run. These results must not be described as 3.8 results.
 
-All six rows remain unreviewed by a human. No final LLM metric should be published until the manual-review fields are completed and the strict validation gate passes.
+Human review was approved on 2026-09-24. The raw run remains unchanged; the reviewed copy is `data/evaluation/runs/2026-09-24-gemini-3.5-flash-reviewed.jsonl`, and the canonical metrics artifact is `data/evaluation/llm_metrics.json`.
+
+Reviewed labels:
+- normal: no unsupported claim; no correction
+- tear: no unsupported claim; no correction
+- crushed corner: no unsupported claim; no correction
+- dent/crush: unsupported confidence interpretation flagged; correction required
+- unknown: no unsupported claim; no correction
+- category-verification failure: grounded draft, but action corrected to the fixed expected `insufficient_evidence`
+
+Final reviewed LLM metrics:
+- action agreement: 5/6 = 83.3%
+- policy correctness: 6/6 = 100%
+- required-tool coverage: 6/6 = 100%
+- human correction rate: 2/6 = 33.3%
+- manually identified unsupported-claim rate: 1/6 = 16.7%
+- grounding-guard recall on unsupported claims: 0/1 = 0%
+- mean latency: 14,386.87 ms (~14.39 s)
+
+CI re-runs the strict reviewed-set validator and recomputes the metrics on every change. The published artifact must match the evaluator output before CI passes.
