@@ -24,6 +24,29 @@ jobs:
       - name: Validate fixed LLM evaluation set
         run: python ../scripts/validate_llm_eval_set.py --input ../data/evaluation/llm_eval_cases.jsonl
 
+      - name: Validate human-reviewed Gemini run
+        run: |
+          python ../scripts/validate_llm_eval_set.py \
+            --input ../data/evaluation/runs/2026-09-24-gemini-3.5-flash-reviewed.jsonl \
+            --require-results
+          python ../scripts/evaluate_reviews.py \
+            --input ../data/evaluation/runs/2026-09-24-gemini-3.5-flash-reviewed.jsonl \
+            --output /tmp/returnreview-llm-metrics.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          generated = json.loads(Path("/tmp/returnreview-llm-metrics.json").read_text())
+          committed = json.loads(Path("../data/evaluation/llm_metrics.json").read_text())
+
+          # The committed artifact adds only audit metadata that the evaluator does
+          # not generate; the scored metrics and core provenance must match exactly.
+          assert generated["llm_review"] == committed["llm_review"]
+          for key in ("statement", "model", "evaluation_set_sha256", "system_prompt_sha256", "generated_at_utc"):
+              assert generated["provenance"][key] == committed["provenance"][key]
+          print("Reviewed LLM metrics artifact verified.")
+          PY
+
       - name: Validate controlled pilot manifest
         run: python ../scripts/validate_pilot_manifest.py --manifest ../data/pilot_manifest.csv
 
