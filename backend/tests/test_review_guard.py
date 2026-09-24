@@ -44,3 +44,9 @@ def test_guard_flags_unknown_evidence_reference():
     guarded = validate_review(review, evidence(), policy())
     assert guarded.unsupported_claims_detected is True
     assert guarded.recommended_action == "manual_review"
+
+
+def test_review_output_visual_findings_are_typed():
+    schema = ReviewOutput.model_json_schema()
+    visual_items = schema["properties"]["visual_findings"]["items"]
+    assert "additionalProperties" not in visual_items
