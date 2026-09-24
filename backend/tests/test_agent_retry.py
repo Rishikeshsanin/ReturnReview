@@ -3,6 +3,7 @@ import pytest
 from app.services import agent_service
 from app.services.agent_service import (
     _generate_with_capacity_fallback,
+    _is_capacity_gemini_error,
     _is_transient_gemini_error,
 )
 
@@ -58,3 +59,42 @@ def test_capacity_fallback_does_not_hide_non_transient_errors(monkeypatch):
             contents="test",
             config=None,
         )
+
+
+class DailyQuotaError(Exception):
+    status_code = 429
+
+    def __str__(self):
+        return (
+            "429 RESOURCE_EXHAUSTED: exceeded your current quota; "
+            "GenerateRequestsPerDayPerProjectPerModel-FreeTier free_tier_requests"
+        )
+
+
+def test_daily_quota_is_not_retried_but_can_trigger_capacity_fallback():
+    error = DailyQuotaError()
+    assert _is_transient_gemini_error(error) is False
+    assert _is_capacity_gemini_error(error) is True
+
+
+def test_daily_quota_primary_uses_fallback_without_hiding_auth_errors(monkeypatch):
+    calls = []
+
+    def fake_generate(client, *, model, contents, config):
+        calls.append(model)
+        if model == "primary":
+            raise DailyQuotaError()
+        return "fallback-response"
+
+    monkeypatch.setattr(agent_service, "_generate_with_retry", fake_generate)
+    response, model_used = _generate_with_capacity_fallback(
+        object(),
+        primary_model="primary",
+        fallback_model="fallback",
+        contents="test",
+        config=None,
+    )
+
+    assert response == "fallback-response"
+    assert model_used == "fallback"
+    assert calls == ["primary", "fallback"]

@@ -12,7 +12,32 @@ from app.utils.config import get_settings
 settings = get_settings()
 
 
+def _is_hard_quota_gemini_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return any(
+        marker in message
+        for marker in (
+            "generaterequestsperdayperprojectpermodel",
+            "free_tier_requests",
+            "exceeded your current quota",
+            "check your plan and billing details",
+        )
+    )
+
+
 def _is_transient_gemini_error(exc: Exception) -> bool:
+    code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    if code == 429 and _is_hard_quota_gemini_error(exc):
+        return False
+    if code in {429, 500, 502, 503, 504}:
+        return True
+    message = str(exc)
+    if _is_hard_quota_gemini_error(exc):
+        return False
+    return any(token in message for token in ("429", "500", "502", "503", "504"))
+
+
+def _is_capacity_gemini_error(exc: Exception) -> bool:
     code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
     if code in {429, 500, 502, 503, 504}:
         return True
@@ -59,7 +84,7 @@ def _generate_with_capacity_fallback(
         if (
             not fallback_model
             or fallback_model == primary_model
-            or not _is_transient_gemini_error(exc)
+            or not _is_capacity_gemini_error(exc)
         ):
             raise
         response = _generate_with_retry(

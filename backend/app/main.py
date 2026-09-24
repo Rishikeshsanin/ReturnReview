@@ -62,8 +62,6 @@ def _run_llm_evaluation_job() -> None:
             command,
             cwd="/app",
             env=os.environ.copy(),
-            capture_output=True,
-            text=True,
             timeout=600,
             check=False,
         )
@@ -71,16 +69,8 @@ def _run_llm_evaluation_job() -> None:
         logger.exception("llm_eval_failed error=%s", exc.__class__.__name__)
         return
 
-    stdout = _redact_runtime_text(completed.stdout or "").strip()
-    stderr = _redact_runtime_text(completed.stderr or "").strip()
-    if stdout:
-        logger.info("llm_eval_stdout %s", stdout.replace("\n", " | "))
     if completed.returncode != 0:
-        logger.error(
-            "llm_eval_failed returncode=%s stderr=%s",
-            completed.returncode,
-            stderr.replace("\n", " | "),
-        )
+        logger.error("llm_eval_failed returncode=%s", completed.returncode)
         return
 
     logger.info("llm_eval_completed output=%s", output)
