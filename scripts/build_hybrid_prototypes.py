@@ -91,7 +91,8 @@ def main():
         "sources":sources,
         "limitations":[
             "crushed_corner is text-derived because the public source has no direct train label.",
-            "tear and dent_or_crush use train-only image crops.",
+            "tear, dent_or_crush, and unknown use train-only image crops.",
+            "unknown is represented by the public source leakage class only as an out-of-taxonomy example.",
             "category verification uses train-only full parcel images.",
             "Thresholds are calibrated on validation data and evaluated once on held-out test data."
         ]
