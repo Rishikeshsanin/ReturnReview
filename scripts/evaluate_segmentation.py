@@ -8,6 +8,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
     parser.add_argument("--data", required=True)
+    parser.add_argument("--output", default="artifacts/evaluation/segmentation_map_metrics.json")
     args = parser.parse_args()
 
     from ultralytics import YOLO
@@ -21,7 +22,7 @@ def main():
         },
         "note": "Generated from the held-out test split; do not edit manually.",
     }
-    path = Path("artifacts/evaluation/metrics.json")
+    path = Path(args.output)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(output, indent=2), encoding="utf-8")
     print(path)
