@@ -87,11 +87,13 @@ Verified in production:
 
 Persistence proof completed with `PERSISTENCE-PROOF-01`: the case, both uploaded evidence images, and audit events remained available after redeploying only `returnreview-api`.
 
-### 2. Gemini production activation
+### 2. Gemini production activation — active; manual evaluation review pending
 
-The backend supports Gemini, but `RETURNREVIEW_GEMINI_API_KEY` must be stored server-side in Railway and `RETURNREVIEW_LLM_ENABLED=true`.
+Gemini is enabled on the Railway backend with its API key stored only as a private backend variable. The production primary remains `gemini-3.8-flash`; a stable capacity fallback is configured separately.
 
-Never commit or paste the API key into chat/source.
+A real six-case fixed evaluation run completed on 2026-09-24 using the explicitly recorded evaluation model `gemini-3.5-flash` after repeated transient 503 capacity failures from the primary model. The raw unreviewed run is preserved at `data/evaluation/runs/2026-09-24-gemini-3.5-flash-results.jsonl`.
+
+The run remains intentionally `manual_reviewed=false` until a human inspects every result. Final LLM metrics remain blocked until that review is completed.
 
 ### 3. Real CV artifacts
 

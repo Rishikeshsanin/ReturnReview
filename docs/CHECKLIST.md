@@ -70,9 +70,9 @@
 - [x] Manual-review gating before final metric aggregation
 - [x] Required-tool coverage + reproducibility metadata
 - [x] Truthful release-readiness checker
-- [ ] Add Gemini key to local/Railway environment (never commit or paste it into chat)
-- [ ] Enable `RETURNREVIEW_LLM_ENABLED=true`
-- [ ] Run fixed real Gemini tool-calling cases
+- [x] Add Gemini key to Railway backend environment (never commit or paste it into chat)
+- [x] Enable `RETURNREVIEW_LLM_ENABLED=true`
+- [x] Run fixed real Gemini tool-calling cases
 - [ ] Manually review every generated evaluation row
 - [ ] Generate groundedness/unsupported-claim/policy/agreement/correction/tool/latency metrics
 

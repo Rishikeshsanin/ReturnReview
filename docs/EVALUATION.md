@@ -142,3 +142,18 @@ Production keeps the configured Gemini primary model unchanged.
 A separate fallback model may be configured and is used only after the primary model exhausts retries on transient capacity or server errors. Stored AI-review metadata records the model that actually produced the draft.
 
 The fixed evaluation may use a separate explicit evaluation model. Every generated result row records the exact model used so evaluation provenance remains accurate.
+
+
+## Recorded real run — 2026-09-24
+
+A real fixed evaluation run completed in the production API environment using:
+
+- evaluation model: `gemini-3.5-flash`
+- cases: 6
+- evaluation-set SHA-256: `6d09a2f35349191e3b93cdf16970b78b3a0ad3add9bcaabcbe1309fcb4e5fa1b`
+- system-prompt SHA-256: `8e9fee71e99c6830af01e32aed079733c7003cd8dab301dc512d39f74466df64`
+- raw results: `data/evaluation/runs/2026-09-24-gemini-3.5-flash-results.jsonl`
+
+The evaluation model is explicitly recorded because the primary production model experienced repeated transient provider-capacity errors during the controlled run. These results must not be described as 3.8 results.
+
+All six rows remain unreviewed by a human. No final LLM metric should be published until the manual-review fields are completed and the strict validation gate passes.
