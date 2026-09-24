@@ -29,6 +29,8 @@ class Settings(BaseSettings):
 
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3.8-flash"
+    gemini_fallback_model: str | None = "gemini-3.5-flash"
+    llm_eval_model: str | None = None
     llm_enabled: bool = False
     run_llm_eval_on_start: bool = False
 

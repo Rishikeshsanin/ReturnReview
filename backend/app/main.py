@@ -44,6 +44,7 @@ def _run_llm_evaluation_job() -> None:
 
     output = Path("/app/artifacts/evaluation/llm_eval_results.jsonl")
     output.parent.mkdir(parents=True, exist_ok=True)
+    evaluation_model = settings.llm_eval_model or settings.gemini_model
     command = [
         sys.executable,
         "/app/scripts/run_gemini_eval.py",
@@ -52,10 +53,10 @@ def _run_llm_evaluation_job() -> None:
         "--output",
         str(output),
         "--model",
-        settings.gemini_model,
+        evaluation_model,
     ]
 
-    logger.info("llm_eval_started model=%s cases_file=/app/data/evaluation/llm_eval_cases.jsonl", settings.gemini_model)
+    logger.info("llm_eval_started model=%s cases_file=/app/data/evaluation/llm_eval_cases.jsonl", evaluation_model)
     try:
         completed = subprocess.run(
             command,
