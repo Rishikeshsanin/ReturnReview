@@ -1,0 +1,1 @@
+2026-09-24 rerun after absolute YOLO checkpoint path fix
