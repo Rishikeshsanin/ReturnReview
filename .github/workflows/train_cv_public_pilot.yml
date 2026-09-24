@@ -93,9 +93,9 @@ jobs:
           python scripts/subset_yolo_seg_dataset.py \
             --input "$CV_WORK/binary-damage" \
             --output "$CV_WORK/pilot" \
-            --max-train 320 \
-            --max-val 60 \
-            --max-test 60 \
+            --max-train 999999 \
+            --max-val 999999 \
+            --max-test 999999 \
             --seed 20260924
 
       - name: Validate segmentation dataset
@@ -108,8 +108,8 @@ jobs:
           python scripts/train_segmentation.py \
             --data "$CV_WORK/pilot/data.yaml" \
             --model yolo11n-seg.pt \
-            --epochs 30 \
-            --imgsz 416 \
+            --epochs 20 \
+            --imgsz 320 \
             --batch 8 \
             --device cpu \
             --workers 2 \
@@ -134,8 +134,8 @@ jobs:
           python scripts/prepare_clip_reference_sets.py \
             --source "$RAW_DATASET" \
             --output "$CV_WORK/clip-references" \
-            --category-count 48 \
-            --defect-count 48 \
+            --category-count 96 \
+            --defect-count 96 \
             --seed 20260924
 
       - name: Build hybrid OpenCLIP prototype bank
@@ -151,9 +151,9 @@ jobs:
             --source "$RAW_DATASET" \
             --negative-images "$CV_WORK/coco128" \
             --output "$CV_WORK/clip-eval" \
-            --max-positive-per-split 100 \
+            --max-positive-per-split 160 \
             --max-negative-per-split 64 \
-            --max-crops-per-class-split 100 \
+            --max-crops-per-class-split 160 \
             --seed 20260924
 
       - name: Calibrate and evaluate product verification
@@ -209,6 +209,17 @@ jobs:
             --dataset-validation "$CV_EVAL/dataset_validation.json" \
             --output "$CV_EVAL/cv_metrics.json"
 
+      - name: Benchmark combined CPU runtime
+        run: |
+          BENCH_IMAGE=$(find "$CV_WORK/pilot/images/test" -type f | sort | head -n 1)
+          test -n "$BENCH_IMAGE"
+          python scripts/benchmark_cv_runtime.py \
+            --checkpoint "$CV_WORK/runs/damage-seg/weights/best.pt" \
+            --prototypes "$CV_WORK/prototypes.npz" \
+            --image "$BENCH_IMAGE" \
+            --imgsz 320 \
+            --output "$CV_EVAL/runtime_benchmark.json"
+
       - name: Package exact candidate model
         run: |
           python scripts/package_cv_release.py \
@@ -223,6 +234,7 @@ jobs:
           cp "$CV_EVAL/prototypes_manifest.json" "$CV_RELEASE/prototypes_manifest.json"
           cp "$CV_WORK/clip-eval/eval_manifest.json" "$CV_RELEASE/eval_manifest.json"
           cp "$CV_EVAL/dataset_validation.json" "$CV_RELEASE/dataset_validation.json"
+          cp "$CV_EVAL/runtime_benchmark.json" "$CV_RELEASE/runtime_benchmark.json"
 
       - name: Upload candidate artifact
         uses: actions/upload-artifact@v4
@@ -247,6 +259,7 @@ jobs:
             "$CV_RELEASE/prototypes_manifest.json" \
             "$CV_RELEASE/eval_manifest.json" \
             "$CV_RELEASE/dataset_validation.json" \
+            "$CV_RELEASE/runtime_benchmark.json" \
             --target "$GITHUB_SHA" \
             --title "ReturnReview CV public pilot ${GITHUB_RUN_NUMBER}" \
             --notes "Automated public-data CV pilot candidate. Prerelease only; inspect held-out metrics before production activation. Source provenance and limitations are included in the release artifacts." \
