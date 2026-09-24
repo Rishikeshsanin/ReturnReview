@@ -133,3 +133,12 @@ For a controlled Railway evaluation:
 6. immediately restore `RETURNREVIEW_RUN_LLM_EVAL_ON_START=false` and redeploy
 
 The runner never prints the API key. The generated rows remain `manual_reviewed=false` until a human has inspected them.
+
+
+## Capacity fallback and evaluation model
+
+Production keeps the configured Gemini primary model unchanged.
+
+A separate fallback model may be configured and is used only after the primary model exhausts retries on transient capacity or server errors. Stored AI-review metadata records the model that actually produced the draft.
+
+The fixed evaluation may use a separate explicit evaluation model. Every generated result row records the exact model used so evaluation provenance remains accurate.
