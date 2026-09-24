@@ -1,5 +1,5 @@
 from __future__ import annotations
-from time import perf_counter
+from time import perf_counter, sleep
 from sqlalchemy.orm import Session
 from app.models.response_models import ReviewOutput
 from app.models.database_models import ReturnCase
@@ -10,6 +10,33 @@ from app.services.review_guard import validate_review
 from app.utils.config import get_settings
 
 settings = get_settings()
+
+
+def _is_transient_gemini_error(exc: Exception) -> bool:
+    code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    if code in {429, 500, 502, 503, 504}:
+        return True
+    message = str(exc)
+    return any(token in message for token in ("429", "500", "502", "503", "504"))
+
+
+def _generate_with_retry(client, *, model: str, contents: str, config):
+    delays = (0, 2, 5, 10, 20)
+    last_error: Exception | None = None
+    for attempt, delay in enumerate(delays, start=1):
+        if delay:
+            sleep(delay)
+        try:
+            return client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config,
+            )
+        except Exception as exc:
+            last_error = exc
+            if not _is_transient_gemini_error(exc) or attempt == len(delays):
+                raise
+    raise RuntimeError("Gemini retry loop ended unexpectedly") from last_error
 
 
 def run_review_agent(db: Session, case: ReturnCase) -> tuple[ReviewOutput, dict]:
@@ -58,7 +85,8 @@ def run_review_agent(db: Session, case: ReturnCase) -> tuple[ReviewOutput, dict]
     client = genai.Client(api_key=settings.gemini_api_key)
     started = perf_counter()
     try:
-        response = client.models.generate_content(
+        response = _generate_with_retry(
+            client,
             model=settings.gemini_model,
             contents=(
                 "Prepare the evidence-based draft review for this case. Use the supplied tools to obtain "
