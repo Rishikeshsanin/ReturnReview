@@ -118,3 +118,18 @@ The evaluator independently refuses incomplete or unreviewed rows and also repor
 ## Reproducibility
 
 Every published LLM result must remain traceable to one model, one fixed evaluation-set checksum, one system-prompt checksum and one generation run. Never mix incompatible runs into one metric file.
+
+
+## Railway one-time evaluation runner
+
+The production API image includes the evaluation scripts, but they do **not** run during normal startup.
+
+For a controlled Railway evaluation:
+1. keep the Gemini key server-side on `returnreview-api`
+2. set `RETURNREVIEW_RUN_LLM_EVAL_ON_START=true`
+3. redeploy only `returnreview-api`
+4. wait for the background job to write `/app/artifacts/evaluation/llm_eval_results.jsonl`
+5. retrieve the non-secret result artifact for manual review
+6. immediately restore `RETURNREVIEW_RUN_LLM_EVAL_ON_START=false` and redeploy
+
+The runner never prints the API key. The generated rows remain `manual_reviewed=false` until a human has inspected them.
