@@ -39,6 +39,38 @@ def _generate_with_retry(client, *, model: str, contents: str, config):
     raise RuntimeError("Gemini retry loop ended unexpectedly") from last_error
 
 
+def _generate_with_capacity_fallback(
+    client,
+    *,
+    primary_model: str,
+    fallback_model: str | None,
+    contents: str,
+    config,
+):
+    try:
+        response = _generate_with_retry(
+            client,
+            model=primary_model,
+            contents=contents,
+            config=config,
+        )
+        return response, primary_model
+    except Exception as exc:
+        if (
+            not fallback_model
+            or fallback_model == primary_model
+            or not _is_transient_gemini_error(exc)
+        ):
+            raise
+        response = _generate_with_retry(
+            client,
+            model=fallback_model,
+            contents=contents,
+            config=config,
+        )
+        return response, fallback_model
+
+
 def run_review_agent(db: Session, case: ReturnCase) -> tuple[ReviewOutput, dict]:
     """Bounded read-only Gemini tool workflow followed by a deterministic grounding guard."""
     evidence = build_visual_evidence(db, case)
@@ -85,9 +117,10 @@ def run_review_agent(db: Session, case: ReturnCase) -> tuple[ReviewOutput, dict]
     client = genai.Client(api_key=settings.gemini_api_key)
     started = perf_counter()
     try:
-        response = _generate_with_retry(
+        response, model_used = _generate_with_capacity_fallback(
             client,
-            model=settings.gemini_model,
+            primary_model=settings.gemini_model,
+            fallback_model=settings.gemini_fallback_model,
             contents=(
                 "Prepare the evidence-based draft review for this case. Use the supplied tools to obtain "
                 "case metadata, visual evidence, and policy. Do not rely on unstated facts."
@@ -104,7 +137,7 @@ def run_review_agent(db: Session, case: ReturnCase) -> tuple[ReviewOutput, dict]
         review = validate_review(ReviewOutput.model_validate(parsed), evidence, policy)
         return review, {
             "provider": "gemini",
-            "model": settings.gemini_model,
+            "model": model_used,
             "latency_ms": (perf_counter() - started) * 1000,
             "tool_calls": tool_log,
             "grounding_guard": "flagged" if review.unsupported_claims_detected else "passed",
