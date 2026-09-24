@@ -50,7 +50,7 @@ Verified after deployment:
 - the production primary remains `gemini-3.8-flash`
 - the configured capacity fallback is `gemini-3.5-flash`
 
-A real six-case fixed evaluation run is preserved at `data/evaluation/runs/2026-09-24-gemini-3.5-flash-results.jsonl`. It remains intentionally unreviewed until a human completes the manual labels; do not publish final LLM metrics before that gate passes.
+A real six-case fixed evaluation run is preserved at `data/evaluation/runs/2026-09-24-gemini-3.5-flash-results.jsonl`. Human review is complete in the separate reviewed copy at `data/evaluation/runs/2026-09-24-gemini-3.5-flash-reviewed.jsonl`, and the published reviewed metrics are stored at `data/evaluation/llm_metrics.json`. The raw run remains unchanged for auditability.
 
 ## Retained Supabase foundation
 
