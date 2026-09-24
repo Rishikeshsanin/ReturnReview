@@ -73,8 +73,9 @@
 - [x] Add Gemini key to Railway backend environment (never commit or paste it into chat)
 - [x] Enable `RETURNREVIEW_LLM_ENABLED=true`
 - [x] Run fixed real Gemini tool-calling cases
-- [ ] Manually review every generated evaluation row
-- [ ] Generate groundedness/unsupported-claim/policy/agreement/correction/tool/latency metrics
+- [x] Manually review every generated evaluation row
+- [x] Generate groundedness/unsupported-claim/policy/agreement/correction/tool/latency metrics
+- [x] Publish reviewed LLM metrics through the Evaluation dashboard
 
 ## Persistence
 - [x] Choose final production persistence: dedicated Railway Postgres
@@ -89,7 +90,7 @@
 ## Final submission
 - [ ] Full real-data E2E QA
 - [ ] Preload real fallback demo cases
-- [ ] Final evaluation dashboard populated from generated metric artifacts
+- [ ] Final evaluation dashboard populated with both LLM and held-out CV metric artifacts
 - [ ] Final screenshots
 - [ ] Final report/presentation/demo video
 - [ ] Viva revision
