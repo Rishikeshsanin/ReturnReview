@@ -65,6 +65,19 @@ Required proof:
 
 Only then mark durable persistence complete.
 
+## Verified production proof
+
+Completed on 2026-09-24 using case `PERSISTENCE-PROOF-01`:
+- created the case on production PostgreSQL
+- uploaded two valid evidence images (`left` and `front`)
+- confirmed both media endpoints rendered before redeploy
+- redeployed only `returnreview-api`
+- deployment `0522dc2b-5a35-4757-993b-56d067d3cb91` completed successfully
+- reloaded the same case after redeploy
+- the same case, both images, and all three audit events remained available
+
+Durable Railway Postgres persistence is therefore verified end to end.
+
 ## Supabase history
 
 A previously provisioned Supabase Project Hub App 13 foundation still exists:

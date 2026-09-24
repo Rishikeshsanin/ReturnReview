@@ -84,7 +84,7 @@
 - [x] Configure `RETURNREVIEW_DATABASE_URL` with a Railway service reference
 - [x] Configure `RETURNREVIEW_DATABASE_SCHEMA=public`
 - [x] Verify API reports PostgreSQL + durable persistence
-- [ ] Verify case + image persistence across an API redeploy
+- [x] Verify case + image persistence across an API redeploy
 
 ## Final submission
 - [ ] Full real-data E2E QA
