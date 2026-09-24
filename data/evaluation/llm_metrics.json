@@ -1,0 +1,21 @@
+{
+  "llm_review": {
+    "evaluation_cases": 6,
+    "review_action_agreement": 0.8333333333333334,
+    "policy_correctness": 1,
+    "manual_unsupported_claim_rate": 0.16666666666666666,
+    "grounding_guard_recall_on_unsupported": 0,
+    "human_correction_rate": 0.3333333333333333,
+    "required_tool_coverage": 1,
+    "average_latency_ms": 14386.868666666667
+  },
+  "provenance": {
+    "statement": "Aggregated only after every fixed Gemini evaluation row was manually reviewed.",
+    "model": "gemini-3.5-flash",
+    "evaluation_set_sha256": "6d09a2f35349191e3b93cdf16970b78b3a0ad3add9bcaabcbe1309fcb4e5fa1b",
+    "system_prompt_sha256": "8e9fee71e99c6830af01e32aed079733c7003cd8dab301dc512d39f74466df64",
+    "generated_at_utc": "2026-09-24T06:22:07.398369+00:00",
+    "human_review_completed_at_utc": "2026-09-24T06:50:00Z",
+    "reviewed_results_path": "data/evaluation/runs/2026-09-24-gemini-3.5-flash-reviewed.jsonl"
+  }
+}
