@@ -1,0 +1,1 @@
+2026-09-24 final public pilot: full source splits + train-only unknown prototype + runtime benchmark
