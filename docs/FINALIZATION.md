@@ -87,13 +87,24 @@ Verified in production:
 
 Persistence proof completed with `PERSISTENCE-PROOF-01`: the case, both uploaded evidence images, and audit events remained available after redeploying only `returnreview-api`.
 
-### 2. Gemini production activation — active; manual evaluation review pending
+### 2. Gemini production activation and evaluation — complete
 
 Gemini is enabled on the Railway backend with its API key stored only as a private backend variable. The production primary remains `gemini-3.8-flash`; a stable capacity fallback is configured separately.
 
 A real six-case fixed evaluation run completed on 2026-09-24 using the explicitly recorded evaluation model `gemini-3.5-flash` after repeated transient 503 capacity failures from the primary model. The raw unreviewed run is preserved at `data/evaluation/runs/2026-09-24-gemini-3.5-flash-results.jsonl`.
 
-The run remains intentionally `manual_reviewed=false` until a human inspects every result. Final LLM metrics remain blocked until that review is completed.
+Human review is complete. The immutable raw run remains at `data/evaluation/runs/2026-09-24-gemini-3.5-flash-results.jsonl`; the approved reviewed copy is `data/evaluation/runs/2026-09-24-gemini-3.5-flash-reviewed.jsonl`; and the canonical metric artifact is `data/evaluation/llm_metrics.json`.
+
+Reviewed LLM metrics:
+- action agreement: 83.3% (5/6)
+- policy correctness: 100%
+- required-tool coverage: 100%
+- human correction rate: 33.3% (2/6)
+- manually identified unsupported-claim rate: 16.7% (1/6)
+- grounding-guard recall on the one human-identified unsupported claim: 0%
+- average latency: 14.39 seconds
+
+The weak guard-recall result is intentionally reported rather than hidden; it identifies a concrete improvement area before final submission.
 
 ### 3. Real CV artifacts
 
