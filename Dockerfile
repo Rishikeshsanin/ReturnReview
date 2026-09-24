@@ -11,6 +11,7 @@ RUN pip install --upgrade pip && pip install -r /app/backend/requirements.txt
 
 COPY backend /app/backend
 COPY data /app/data
+COPY scripts /app/scripts
 
 WORKDIR /app/backend
 

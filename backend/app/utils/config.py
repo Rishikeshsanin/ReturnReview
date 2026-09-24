@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3.8-flash"
     llm_enabled: bool = False
+    run_llm_eval_on_start: bool = False
 
     @property
     def storage_path(self) -> Path:
