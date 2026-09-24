@@ -12,7 +12,7 @@ ReturnReview is an evidence-first semester project for **Fundamentals of Compute
 
 Both services are isolated inside the dedicated Railway **ReturnReview** project.
 
-> **Current AI status:** the hosted product shell is live, but project-specific CV inference and Gemini are intentionally disabled until the real pilot dataset/checkpoint/prototype bank and Gemini API key are available. The API refuses to fabricate CV evidence.
+> **Current AI status:** Gemini is enabled server-side in Railway with `gemini-3.8-flash` as the production primary and a stable capacity fallback. A real six-case Gemini 3.5 Flash evaluation run is preserved for manual review. Project-specific CV inference remains intentionally unavailable until the real pilot dataset, trained checkpoint, and prototype bank exist; the API refuses to fabricate CV evidence.
 
 > **Current persistence status:** production persistence is fully verified on dedicated Railway Postgres inside the isolated **ReturnReview** project. Startup reports PostgreSQL with durable persistence enabled, health/readiness pass, and a real case with two evidence images survived an API redeploy. The older Supabase App 13 foundation is retained but is no longer the intended production runtime database.
 
@@ -68,7 +68,7 @@ Implemented and tested:
 - isolated Railway Postgres + persistent database volume
 - database-backed evidence image/overlay support + readiness reporting
 
-**The remaining hard dependencies are the real CV pilot/data pipeline and Gemini activation/evaluation.**
+**The remaining hard dependencies are the real CV pilot/data pipeline and human verification of the preserved Gemini evaluation run.**
 
 See [`docs/CHECKLIST.md`](docs/CHECKLIST.md).
 
