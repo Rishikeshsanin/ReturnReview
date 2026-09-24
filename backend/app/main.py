@@ -63,7 +63,7 @@ def _run_llm_evaluation_job() -> None:
             env=os.environ.copy(),
             capture_output=True,
             text=True,
-            timeout=300,
+            timeout=600,
             check=False,
         )
     except Exception as exc:
