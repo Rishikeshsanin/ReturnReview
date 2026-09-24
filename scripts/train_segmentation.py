@@ -1,5 +1,6 @@
 """Train binary damage segmentation on a validated YOLO-seg dataset."""
 import argparse
+from pathlib import Path
 
 
 def main():
@@ -18,9 +19,12 @@ def main():
 
     from ultralytics import YOLO
 
+    data_path = str(Path(args.data).resolve())
+    project_path = str(Path(args.project).resolve())
+
     model = YOLO(args.model)
     result = model.train(
-        data=args.data,
+        data=data_path,
         epochs=args.epochs,
         imgsz=args.imgsz,
         batch=args.batch,
@@ -28,11 +32,12 @@ def main():
         workers=args.workers,
         seed=args.seed,
         deterministic=True,
-        project=args.project,
+        project=project_path,
         name=args.name,
         exist_ok=False,
         plots=True,
     )
+    print(f"training_project={project_path}")
     print(result)
 
 
