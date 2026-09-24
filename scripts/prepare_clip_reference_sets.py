@@ -15,7 +15,7 @@ from PIL import Image
 import yaml
 
 IMAGE_EXTS={".jpg",".jpeg",".png",".webp"}
-CLASS_MAP={"tear":"tear","squeeze":"dent_or_crush"}
+CLASS_MAP={"tear":"tear","squeeze":"dent_or_crush","leakage":"unknown"}
 
 
 def normalize_names(raw):
@@ -114,6 +114,7 @@ def main():
             "Only source train split contributes prototype references.",
             "tear maps directly to tear.",
             "squeeze is explicitly treated as a compression-damage proxy for dent_or_crush.",
+            "leakage supplies a train-only out-of-taxonomy prototype for the runtime unknown class.",
             "No crushed_corner source examples are invented."
         ]
     }
