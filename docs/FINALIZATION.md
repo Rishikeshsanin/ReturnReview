@@ -74,7 +74,7 @@ The checker reports only file/configuration presence. It never prints secret val
 
 ## External blockers that cannot be fabricated
 
-### 1. Durable production database verification
+### 1. Durable production database verification — complete
 
 A dedicated Railway Postgres service and persistent volume now exist inside the isolated ReturnReview project, and the API database URL is configured through a Railway service reference.
 
@@ -85,7 +85,7 @@ Verified in production:
 - `/health` returns HTTP 200
 - `/readiness` returns HTTP 200
 
-The remaining persistence proof is a real case + 2–4 evidence images surviving an API redeploy.
+Persistence proof completed with `PERSISTENCE-PROOF-01`: the case, both uploaded evidence images, and audit events remained available after redeploying only `returnreview-api`.
 
 ### 2. Gemini production activation
 
