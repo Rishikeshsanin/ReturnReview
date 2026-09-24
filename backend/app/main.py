@@ -1,6 +1,10 @@
 from contextlib import asynccontextmanager
 import logging
+import os
 from pathlib import Path
+import subprocess
+import sys
+import threading
 from time import perf_counter
 from uuid import uuid4
 
@@ -24,6 +28,71 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 logger = logging.getLogger("returnreview")
+
+
+def _redact_runtime_text(value: str) -> str:
+    if settings.gemini_api_key:
+        value = value.replace(settings.gemini_api_key, "[REDACTED]")
+    return value
+
+
+def _run_llm_evaluation_job() -> None:
+    """Run the fixed Gemini evaluation once without blocking API startup."""
+    if not settings.llm_enabled or not settings.gemini_api_key:
+        logger.warning("llm_eval_skipped reason=gemini_not_enabled")
+        return
+
+    output = Path("/app/artifacts/evaluation/llm_eval_results.jsonl")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    command = [
+        sys.executable,
+        "/app/scripts/run_gemini_eval.py",
+        "--input",
+        "/app/data/evaluation/llm_eval_cases.jsonl",
+        "--output",
+        str(output),
+        "--model",
+        settings.gemini_model,
+    ]
+
+    logger.info("llm_eval_started model=%s cases_file=/app/data/evaluation/llm_eval_cases.jsonl", settings.gemini_model)
+    try:
+        completed = subprocess.run(
+            command,
+            cwd="/app",
+            env=os.environ.copy(),
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+    except Exception as exc:
+        logger.exception("llm_eval_failed error=%s", exc.__class__.__name__)
+        return
+
+    stdout = _redact_runtime_text(completed.stdout or "").strip()
+    stderr = _redact_runtime_text(completed.stderr or "").strip()
+    if stdout:
+        logger.info("llm_eval_stdout %s", stdout.replace("\n", " | "))
+    if completed.returncode != 0:
+        logger.error(
+            "llm_eval_failed returncode=%s stderr=%s",
+            completed.returncode,
+            stderr.replace("\n", " | "),
+        )
+        return
+
+    logger.info("llm_eval_completed output=%s", output)
+
+
+def _maybe_start_llm_evaluation() -> None:
+    if not settings.run_llm_eval_on_start:
+        return
+    threading.Thread(
+        target=_run_llm_evaluation_job,
+        name="returnreview-llm-eval",
+        daemon=True,
+    ).start()
 
 
 def _migrate_legacy_sqlite() -> None:
@@ -64,6 +133,7 @@ async def lifespan(_: FastAPI):
         settings.durable_persistence,
         settings.cv_model_version,
     )
+    _maybe_start_llm_evaluation()
     yield
     logger.info("application_stopped")
 
