@@ -39,9 +39,16 @@ class PolicyReference(BaseModel):
     text: str
 
 
+class ReviewVisualFinding(BaseModel):
+    finding: str
+    evidence_image_id: str
+    confidence: float = Field(ge=0, le=1)
+    affected_area_percent: float | None = None
+
+
 class ReviewOutput(BaseModel):
     case_summary: str
-    visual_findings: list[dict] = Field(default_factory=list)
+    visual_findings: list[ReviewVisualFinding] = Field(default_factory=list)
     policy_reference: PolicyReference | None
     review_status: str
     recommended_action: Literal[

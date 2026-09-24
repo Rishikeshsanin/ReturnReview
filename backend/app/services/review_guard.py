@@ -25,8 +25,8 @@ def validate_review(
         evidence_by_image.setdefault(finding.image_id, set()).add(finding.defect_type.lower())
 
     for item in review.visual_findings:
-        image_id = str(item.get("evidence_image_id", ""))
-        text = str(item.get("finding", "")).lower()
+        image_id = item.evidence_image_id
+        text = item.finding.lower()
         if image_id not in evidence_by_image:
             problems.append(f"Visual claim references unknown evidence image '{image_id}'.")
             continue
@@ -37,7 +37,7 @@ def validate_review(
 
     combined = " ".join(
         [review.case_summary, review.review_status]
-        + [str(x.get("finding", "")) for x in review.visual_findings]
+        + [x.finding for x in review.visual_findings]
     ).lower()
     for phrase in PROHIBITED_UNSUPPORTED_PHRASES:
         if phrase in combined:
