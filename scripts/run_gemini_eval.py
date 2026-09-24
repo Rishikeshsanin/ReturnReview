@@ -16,7 +16,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from time import perf_counter
+from time import perf_counter, sleep
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
@@ -72,6 +72,33 @@ def build_evidence(row: dict) -> tuple[VisualEvidence, str]:
     return evidence, str(scenario.get("customer_reason") or "")
 
 
+def _is_transient_gemini_error(exc: Exception) -> bool:
+    code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    if code in {429, 500, 502, 503, 504}:
+        return True
+    message = str(exc)
+    return any(token in message for token in ("429", "500", "502", "503", "504"))
+
+
+def _generate_with_retry(client, *, model: str, contents: str, config):
+    delays = (0, 2, 5, 10, 20)
+    last_error: Exception | None = None
+    for attempt, delay in enumerate(delays, start=1):
+        if delay:
+            sleep(delay)
+        try:
+            return client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config,
+            )
+        except Exception as exc:
+            last_error = exc
+            if not _is_transient_gemini_error(exc) or attempt == len(delays):
+                raise
+    raise RuntimeError("Gemini retry loop ended unexpectedly") from last_error
+
+
 def run_case(client, model: str, row: dict) -> tuple[ReviewOutput, float, list[str]]:
     from google.genai import types
 
@@ -102,7 +129,8 @@ def run_case(client, model: str, row: dict) -> tuple[ReviewOutput, float, list[s
         return policy.model_dump() if policy else {"policy_found": False}
 
     started = perf_counter()
-    response = client.models.generate_content(
+    response = _generate_with_retry(
+        client,
         model=model,
         contents=(
             "Prepare the evidence-based draft review for this fixed evaluation case. "
