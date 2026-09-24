@@ -1,1 +1,1 @@
-2026-09-24 rerun after absolute YOLO checkpoint path fix
+2026-09-24 rerun with stronger YOLO training and train-image OpenCLIP prototypes
