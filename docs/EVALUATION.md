@@ -176,3 +176,13 @@ Final reviewed LLM metrics:
 - mean latency: 14,386.87 ms (~14.39 s)
 
 CI re-runs the strict reviewed-set validator and recomputes the metrics on every change. The published artifact must match the evaluator output before CI passes.
+
+
+## Post-review hardening
+
+The first human-reviewed run intentionally remains immutable as a baseline. It exposed two concrete issues in the evaluated code version:
+
+1. the grounding guard did not inspect the model's uncertainty text for invalid confidence-complement arithmetic;
+2. a category-verification failure could preserve the model's `request_more_evidence` action instead of the fixed `insufficient_evidence` contract.
+
+The current code fixes both issues and includes regression tests. The published 2026-09-24 metrics are **not rewritten** after the fix; a future real evaluation run should be used to measure the improved guard/action behavior.
