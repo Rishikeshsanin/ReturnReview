@@ -115,7 +115,7 @@ jobs:
         run: docker build -f Dockerfile.cv --build-arg CV_RELEASE_TAG=cv-lightweight-1 -t returnreview-cv .
       - name: Verify packaged CV models load
         run: |
-          docker run --rm returnreview-cv python - <<'PY'
+          docker run --rm -i returnreview-cv python - <<'PY'
           from PIL import Image
           from app.services.category_verifier import category_verifier
           from app.services.cv_service import cv_service
