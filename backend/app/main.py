@@ -186,7 +186,7 @@ def readiness_payload(database_ok: bool) -> dict:
     cv_ready = (
         settings.cv_model_version != "untrained"
         and Path(settings.cv_model_path).exists()
-        and Path(settings.prototype_bank_path).exists()
+        and Path(settings.category_model_path).exists()
     )
     llm_ready = settings.llm_enabled and bool(settings.gemini_api_key)
     blockers: list[str] = []
