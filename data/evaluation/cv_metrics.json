@@ -1,0 +1,105 @@
+{
+  "status": "evaluated_public_pilot",
+  "scope": "lightweight_production_candidate_public_data",
+  "segmentation": {
+    "test_images": 169,
+    "damaged_test_images": 169,
+    "mean_iou_all": 0.140977,
+    "mean_dice_all": 0.199837,
+    "mean_iou_damaged_only": 0.140977,
+    "mean_dice_damaged_only": 0.199837,
+    "pixel_precision_all": 0.298938,
+    "pixel_recall_all": 0.178782,
+    "mask_map50": 0.12943023683008922,
+    "mask_map50_95": 0.03237116462155614,
+    "box_map50": 0.14396114443765018,
+    "per_class": {
+      "tear": {
+        "mask_map50_95": 0.006335227046828829
+      },
+      "squeeze": {
+        "mask_map50_95": 0.0531965734946306
+      },
+      "leakage": {
+        "mask_map50_95": 0.037581693323209
+      }
+    }
+  },
+  "product_verification": {
+    "test_samples": 32,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "false_accept_rate": 0.0,
+    "false_reject_rate": 0.0,
+    "confusion": {
+      "tp": 16,
+      "tn": 16,
+      "fp": 0,
+      "fn": 0
+    },
+    "model": "mobilenet_v3_small",
+    "best_validation_accuracy": 0.96875
+  },
+  "runtime": {
+    "platform": "github_actions_ubuntu_cpu",
+    "after_import_peak_rss_mb": 716.98046875,
+    "after_yolo_load_peak_rss_mb": 734.24609375,
+    "after_category_load_peak_rss_mb": 750.70703125,
+    "final_peak_rss_mb": 802.71875,
+    "yolo_load_ms": 50.39795199991204,
+    "category_load_ms": 53.03509899931669,
+    "category_single_image_inference_ms": 25.67379200081632,
+    "yolo_single_image_inference_ms": 159.91066600145132,
+    "combined_single_image_inference_ms": 185.58445800226764,
+    "predicted_masks": 0,
+    "category_probability_cardboard": 0.9999408721923828,
+    "total_seconds": 3.0322888499995315,
+    "railway_fit": {
+      "current_limit_mb": 1024.0,
+      "observed_existing_api_base_mb": 92.0,
+      "safety_reserve_mb": 64.0,
+      "estimated_total_mb": 894.71875,
+      "fits_with_reserve": true
+    }
+  },
+  "dataset": {
+    "source_id": "roboflow_box_damage_segmentation_v16",
+    "source_url": "https://universe.roboflow.com/tracking-u78ba/box-fsrpn",
+    "license": "CC BY 4.0",
+    "split_counts": {
+      "train": {
+        "images": 3447,
+        "polygons": 7326
+      },
+      "val": {
+        "images": 326,
+        "polygons": 750
+      },
+      "test": {
+        "images": 169,
+        "polygons": 373
+      }
+    },
+    "class_polygons": {
+      "tear": 1547,
+      "squeeze": 3449,
+      "leakage": 3453
+    }
+  },
+  "limitations": [
+    "This remains a licensed public-data pilot, not the project-controlled capture.",
+    "Source squeeze maps to compression damage and is separated into dent_or_crush vs crushed_corner with a geometry heuristic at runtime.",
+    "The public source does not provide a direct crushed_corner training label.",
+    "Source leakage is treated as out-of-taxonomy unknown.",
+    "Generic COCO images are used as non-box category negatives."
+  ],
+  "provenance": {
+    "release_tag": "cv-lightweight-1",
+    "workflow_run_id": 36137124643,
+    "release_manifest_created_at_utc": "2026-09-25T14:50:21.455034+00:00",
+    "segmentation_checkpoint_sha256": "1cd0d8ecf124deb9c75f7f67b8a42df936ac0e55e2df5c3f366b1738975d3d82",
+    "category_checkpoint_sha256": "dd69374690501edae2ac59954c73a4bc99d12fa3d26e15e9a5565966c61dbc19"
+  }
+}
