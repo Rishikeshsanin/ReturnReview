@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     cv_model_path: str = "./models/checkpoints/best.pt"
     cv_model_version: str = "untrained"
+    cv_image_size: int = 320
     clip_model: str = "ViT-B-32"
     clip_pretrained: str = "laion2b_s34b_b79k"
     prototype_bank_path: str = "./models/prototypes.npz"
