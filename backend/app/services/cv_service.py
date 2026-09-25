@@ -30,7 +30,7 @@ class CVService:
             try:
                 from ultralytics import YOLO
             except ImportError as exc:
-                raise CVUnavailable("Install backend/requirements-cv.txt to run CV inference") from exc
+                raise CVUnavailable("Install backend/requirements-cv-light.txt to run CV inference") from exc
             self._yolo = YOLO(str(model_path))
         return self._yolo
 
