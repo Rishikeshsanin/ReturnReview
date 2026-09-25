@@ -30,7 +30,9 @@ def metrics():
         "scope": (
             "llm_review_complete_cv_public_pilot"
             if llm is not None and cv is not None
-            else "partial_evaluation"
+            else "llm_review_complete_cv_pending"
+            if llm is not None
+            else "cv_public_pilot_only"
         ),
     }
     if llm is not None:
