@@ -1,4 +1,2 @@
 -r requirements.txt
-torch>=2.5,<3
-torchvision>=0.20,<1
 ultralytics>=8.3,<9
