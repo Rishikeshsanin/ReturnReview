@@ -53,3 +53,40 @@ def test_uploaded_media_is_served_from_case_endpoint():
     assert media.status_code == 200
     assert media.headers["content-type"].startswith("image/jpeg")
     assert len(media.content) > 100
+
+
+def test_inspect_response_immediately_contains_persisted_cv_evidence(monkeypatch):
+    created = client.post("/api/cases", json={
+        "external_case_id": f"TEST-CV-REFRESH-{uuid4()}",
+        "product_name": "Corrugated Shipping Box",
+        "product_category": "cardboard_box",
+        "customer_reason": "Visible box damage",
+    })
+    assert created.status_code == 201
+    case_id = created.json()["id"]
+
+    for view in ("front", "back"):
+        uploaded = client.post(
+            f"/api/cases/{case_id}/images",
+            data={"view_label": view},
+            files={"image": (f"{view}.jpg", make_jpeg(), "image/jpeg")},
+        )
+        assert uploaded.status_code == 201
+
+    def fake_inspect(image_path, image_id, image_blob=None):
+        return {
+            "model_version": "test-lightweight-cv",
+            "product_similarity": 0.91,
+            "product_verified": True,
+            "latency_ms": 12.0,
+            "findings": [],
+        }
+
+    monkeypatch.setattr("app.api.cases.cv_service.inspect", fake_inspect)
+    inspected = client.post(f"/api/cases/{case_id}/inspect")
+    assert inspected.status_code == 200
+    payload = inspected.json()
+    assert payload["case"]["status"] == "CV_COMPLETE"
+    assert payload["evidence"]["category_verified"] is True
+    assert payload["evidence"]["verification_score"] == 0.91
+    assert len(payload["images"]) == 2
