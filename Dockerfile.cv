@@ -1,0 +1,33 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt /app/backend/requirements.txt
+COPY backend/requirements-cv-light.txt /app/backend/requirements-cv-light.txt
+RUN pip install --upgrade pip && pip install -r /app/backend/requirements-cv-light.txt
+
+COPY backend /app/backend
+COPY data /app/data
+COPY scripts /app/scripts
+
+ARG CV_RELEASE_TAG=cv-lightweight-1
+RUN mkdir -p /app/backend/models/checkpoints \
+    && curl -fL "https://github.com/Rishikeshsanin/ReturnReview/releases/download/${CV_RELEASE_TAG}/release_manifest.json" -o /tmp/release_manifest.json \
+    && curl -fL "https://github.com/Rishikeshsanin/ReturnReview/releases/download/${CV_RELEASE_TAG}/best.pt" -o /app/backend/models/checkpoints/best.pt \
+    && curl -fL "https://github.com/Rishikeshsanin/ReturnReview/releases/download/${CV_RELEASE_TAG}/category_mobilenet_v3_small.pt" -o /app/backend/models/category_mobilenet_v3_small.pt \
+    && python /app/scripts/verify_lightweight_release.py \
+       --manifest /tmp/release_manifest.json \
+       --segmentation /app/backend/models/checkpoints/best.pt \
+       --category /app/backend/models/category_mobilenet_v3_small.pt
+
+WORKDIR /app/backend
+
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
