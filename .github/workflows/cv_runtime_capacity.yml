@@ -1,0 +1,100 @@
+name: Audit CV Runtime Capacity
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/cv_runtime_capacity_trigger.txt
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install CV dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-cv.txt
+
+      - name: Download approved public-pilot checkpoint
+        run: |
+          mkdir -p artifacts/capacity
+          gh release download cv-public-pilot-4 \
+            --pattern best.pt \
+            --dir artifacts/capacity
+
+      - name: Benchmark YOLO alone
+        run: |
+          python scripts/benchmark_cv_components.py \
+            --component yolo \
+            --checkpoint artifacts/capacity/best.pt \
+            --imgsz 320 \
+            --output artifacts/capacity/yolo.json
+
+      - name: Benchmark current OpenCLIP alone
+        run: |
+          python scripts/benchmark_cv_components.py \
+            --component openclip \
+            --clip-model ViT-B-32 \
+            --clip-pretrained laion2b_s34b_b79k \
+            --output artifacts/capacity/openclip-vit-b32.json
+
+      - name: Benchmark lower-memory OpenCLIP candidate
+        run: |
+          python scripts/benchmark_cv_components.py \
+            --component openclip \
+            --clip-model RN50 \
+            --clip-pretrained openai \
+            --output artifacts/capacity/openclip-rn50.json
+
+      - name: Summarize Railway fit
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          base_api_mb = 92.0
+          railway_limit_mb = 1024.0
+          reserve_mb = 96.0
+          rows = {}
+          for path in Path("artifacts/capacity").glob("*.json"):
+              rows[path.stem] = json.loads(path.read_text())
+          summary = {
+              "railway_limit_mb": railway_limit_mb,
+              "observed_current_api_base_mb": base_api_mb,
+              "safety_reserve_mb": reserve_mb,
+              "components": {},
+          }
+          for name, row in rows.items():
+              peak = float(row["final_peak_rss_mb"])
+              estimated_total = base_api_mb + peak
+              summary["components"][name] = {
+                  "isolated_peak_rss_mb": peak,
+                  "estimated_api_plus_worker_mb": estimated_total,
+                  "fits_with_reserve": estimated_total + reserve_mb < railway_limit_mb,
+                  "single_image_inference_ms": row["single_image_inference_ms"],
+              }
+          Path("artifacts/capacity/summary.json").write_text(
+              json.dumps(summary, indent=2) + "\n"
+          )
+          print(json.dumps(summary, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: returnreview-cv-runtime-capacity
+          path: artifacts/capacity/
+          if-no-files-found: error
+          retention-days: 30
