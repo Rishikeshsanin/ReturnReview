@@ -1,0 +1,213 @@
+name: Train Lightweight Production CV
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/lightweight_cv_trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  train-lightweight-cv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      ROBOFLOW_API_KEY: ${{ secrets.ROBOFLOW_API_KEY }}
+      CV_WORK: artifacts/lightweight-cv-work
+      CV_EVAL: artifacts/lightweight-cv-evaluation
+      CV_RELEASE: artifacts/lightweight-cv-release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require Roboflow secret
+        run: |
+          if [ -z "$ROBOFLOW_API_KEY" ]; then
+            echo "::error::ROBOFLOW_API_KEY is required"
+            exit 2
+          fi
+
+      - name: Install CV dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements-cv.txt
+          pip install "roboflow>=1.2,<2"
+
+      - name: Download pinned public source
+        run: |
+          mkdir -p "$CV_WORK" "$CV_EVAL"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from roboflow import Roboflow
+
+          location = Path("artifacts/lightweight-cv-work/raw-roboflow").resolve()
+          rf = Roboflow(api_key=os.environ["ROBOFLOW_API_KEY"])
+          dataset = rf.workspace("tracking-u78ba").project("box-fsrpn").version(16).download(
+              "yolov8", location=str(location), overwrite=True
+          )
+          actual = Path(dataset.location).resolve()
+          if not (actual / "data.yaml").is_file():
+              raise SystemExit(f"Downloaded export has no data.yaml: {actual}")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as handle:
+              handle.write(f"RAW_DATASET={actual}\n")
+          print(f"raw_dataset={actual}")
+          PY
+
+      - name: Download generic non-box negatives
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import urllib.request, zipfile
+
+          target = Path("artifacts/lightweight-cv-work/coco128.zip")
+          urllib.request.urlretrieve("https://ultralytics.com/assets/coco128.zip", target)
+          with zipfile.ZipFile(target) as zf:
+              zf.extractall("artifacts/lightweight-cv-work")
+          images = list(Path("artifacts/lightweight-cv-work/coco128").rglob("*.jpg"))
+          if len(images) < 128:
+              raise SystemExit(f"Expected at least 128 negatives, found {len(images)}")
+          print(f"generic_negative_images={len(images)}")
+          PY
+
+      - name: Prepare multiclass segmentation dataset
+        run: |
+          python scripts/prepare_multiclass_segmentation.py \
+            --input "$RAW_DATASET" \
+            --output "$CV_WORK/multiclass-seg" \
+            --source-id roboflow_box_damage_segmentation_v16 \
+            --source-url https://universe.roboflow.com/tracking-u78ba/box-fsrpn \
+            --license "CC BY 4.0"
+
+      - name: Train multiclass YOLO segmentation
+        run: |
+          python scripts/train_segmentation.py \
+            --data "$CV_WORK/multiclass-seg/data.yaml" \
+            --model yolo11n-seg.pt \
+            --epochs 20 \
+            --imgsz 320 \
+            --batch 8 \
+            --device cpu \
+            --workers 2 \
+            --seed 20260925 \
+            --project "$CV_WORK/runs" \
+            --name multiclass-seg
+          test -s "$CV_WORK/runs/multiclass-seg/weights/best.pt"
+
+      - name: Evaluate segmentation
+        run: |
+          python scripts/evaluate_masks.py \
+            --model "$CV_WORK/runs/multiclass-seg/weights/best.pt" \
+            --root "$CV_WORK/multiclass-seg" \
+            --output "$CV_EVAL/segmentation_pixel_metrics.json"
+          python scripts/evaluate_multiclass_segmentation.py \
+            --model "$CV_WORK/runs/multiclass-seg/weights/best.pt" \
+            --data "$CV_WORK/multiclass-seg/data.yaml" \
+            --output "$CV_EVAL/segmentation_multiclass_metrics.json"
+
+      - name: Prepare category dataset
+        run: |
+          python scripts/prepare_category_dataset.py \
+            --positive-source "$RAW_DATASET" \
+            --negative-source "$CV_WORK/coco128" \
+            --output "$CV_WORK/category" \
+            --train-per-class 96 \
+            --val-per-class 16 \
+            --test-per-class 16 \
+            --seed 20260925
+
+      - name: Train lightweight category verifier
+        run: |
+          python scripts/train_category_classifier.py \
+            --root "$CV_WORK/category" \
+            --output "$CV_WORK/category_mobilenet_v3_small.pt" \
+            --epochs 8 \
+            --batch 16 \
+            --seed 20260925
+
+      - name: Evaluate category verifier
+        run: |
+          python scripts/evaluate_category_classifier.py \
+            --model "$CV_WORK/category_mobilenet_v3_small.pt" \
+            --test-root "$CV_WORK/category/test" \
+            --output "$CV_EVAL/category_metrics.json"
+
+      - name: Benchmark combined lightweight runtime
+        run: |
+          BENCH_IMAGE=$(find "$CV_WORK/multiclass-seg/images/test" -type f | sort | head -n 1)
+          test -n "$BENCH_IMAGE"
+          python scripts/benchmark_lightweight_cv.py \
+            --segmentation "$CV_WORK/runs/multiclass-seg/weights/best.pt" \
+            --category "$CV_WORK/category_mobilenet_v3_small.pt" \
+            --image "$BENCH_IMAGE" \
+            --imgsz 320 \
+            --output "$CV_EVAL/runtime_benchmark.json"
+
+      - name: Assemble metrics
+        run: |
+          python scripts/assemble_lightweight_cv_metrics.py \
+            --pixel "$CV_EVAL/segmentation_pixel_metrics.json" \
+            --multiclass "$CV_EVAL/segmentation_multiclass_metrics.json" \
+            --category "$CV_EVAL/category_metrics.json" \
+            --runtime "$CV_EVAL/runtime_benchmark.json" \
+            --dataset-manifest "$CV_WORK/multiclass-seg/returnreview_multiclass_manifest.json" \
+            --output "$CV_EVAL/cv_metrics.json"
+
+      - name: Package candidate
+        run: |
+          python scripts/package_lightweight_cv_release.py \
+            --segmentation "$CV_WORK/runs/multiclass-seg/weights/best.pt" \
+            --category "$CV_WORK/category_mobilenet_v3_small.pt" \
+            --segmentation-metrics "$CV_EVAL/segmentation_multiclass_metrics.json" \
+            --category-metrics "$CV_EVAL/category_metrics.json" \
+            --runtime-benchmark "$CV_EVAL/runtime_benchmark.json" \
+            --model-version "cv-lightweight-${GITHUB_RUN_NUMBER}" \
+            --output-dir "$CV_RELEASE"
+          cp "$CV_EVAL/cv_metrics.json" "$CV_RELEASE/cv_metrics.json"
+          cp "$CV_WORK/multiclass-seg/returnreview_multiclass_manifest.json" "$CV_RELEASE/dataset_manifest.json"
+
+      - name: Enforce Railway memory gate
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open("artifacts/lightweight-cv-evaluation/runtime_benchmark.json"))
+          fit = data["railway_fit"]["fits_with_reserve"]
+          print(json.dumps(data["railway_fit"], indent=2))
+          if not fit:
+              raise SystemExit("Lightweight CV candidate does not fit current Railway 1 GB memory gate")
+          PY
+
+      - name: Upload candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: returnreview-lightweight-cv-${{ github.run_number }}
+          path: |
+            artifacts/lightweight-cv-release/
+            artifacts/lightweight-cv-evaluation/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish immutable prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="cv-lightweight-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" \
+            "$CV_RELEASE/best.pt" \
+            "$CV_RELEASE/category_mobilenet_v3_small.pt" \
+            "$CV_RELEASE/release_manifest.json" \
+            "$CV_RELEASE/cv_metrics.json" \
+            "$CV_RELEASE/segmentation_metrics.json" \
+            "$CV_RELEASE/category_metrics.json" \
+            "$CV_RELEASE/runtime_benchmark.json" \
+            "$CV_RELEASE/dataset_manifest.json" \
+            --target "$GITHUB_SHA" \
+            --title "ReturnReview lightweight CV candidate ${GITHUB_RUN_NUMBER}" \
+            --notes "Public-data lightweight production candidate. Requires explicit production approval before Railway activation." \
+            --prerelease
