@@ -37,7 +37,7 @@ class CategoryVerifier:
             from torchvision.models import mobilenet_v3_small
         except ImportError as exc:
             raise CategoryVerifierUnavailable(
-                "Install backend/requirements-cv.txt to run category verification"
+                "Install backend/requirements-cv-light.txt to run category verification"
             ) from exc
 
         payload = torch.load(path, map_location="cpu", weights_only=False)
