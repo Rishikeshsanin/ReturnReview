@@ -119,7 +119,12 @@ class CVService:
                 xyxy = boxes.xyxy[idx].cpu().numpy().astype(float).tolist()
                 x1, y1, x2, y2 = [max(0, int(x)) for x in xyxy]
                 class_id = int(boxes.cls[idx].item()) if boxes.cls is not None else -1
-                class_name = str(result.names.get(class_id, "unknown"))
+                if isinstance(result.names, dict):
+                    class_name = str(result.names.get(class_id, "unknown"))
+                elif 0 <= class_id < len(result.names):
+                    class_name = str(result.names[class_id])
+                else:
+                    class_name = "unknown"
                 defect_type = self._map_defect_type(
                     class_name,
                     xyxy,
