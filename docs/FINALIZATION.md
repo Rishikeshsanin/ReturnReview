@@ -106,16 +106,31 @@ Reviewed LLM metrics:
 
 The weak guard-recall result is intentionally reported rather than hidden. The reviewed failure led to a regression fix that now rejects confidence-complement arithmetic, and category-verification failure is deterministically normalized to `insufficient_evidence`. The historical metric remains unchanged; improvement must be demonstrated by a future real rerun rather than by rewriting the baseline.
 
-### 3. Real CV artifacts
+### 3. Lightweight CV public-pilot candidate — complete
 
-The production CV path requires:
-- a real polygon/mask-labelled damage dataset
-- trained segmentation checkpoint
-- OpenCLIP prototype bank
-- validation-calibrated thresholds
-- held-out metrics
+A checksum-verified public-data release candidate now exists as `cv-lightweight-1`.
 
-Detection rectangles/boxes are **not** accepted as segmentation-mask ground truth.
+Artifacts:
+- multiclass YOLO11n-seg checkpoint
+- MobileNetV3-Small cardboard-box verifier
+- release manifest with SHA-256 checksums
+- held-out CV metric artifact
+- runtime capacity benchmark
+
+Held-out public-pilot results:
+- category verification: 100% accuracy and F1 on 32 held-out images (16 positives / 16 disjoint generic negatives)
+- segmentation mean IoU: 14.1%
+- segmentation mean Dice: 20.0%
+- mask mAP@50: 12.9%
+- measured combined CPU inference: ~185.6 ms/image on GitHub-hosted Ubuntu CPU
+- measured CV peak RSS: ~802.7 MB
+- estimated existing-API + CV footprint: ~894.7 MB; 1 GB gate passes with the recorded 64 MB reserve
+
+The segmentation numbers are modest and are not hidden. This is a public-data engineering pilot, not a claim of production-grade visual accuracy.
+
+The runtime no longer requires OpenCLIP in production. Category verification uses MobileNetV3-Small; YOLO predicts source classes `tear`, `squeeze`, and `leakage`. Runtime maps `tear` directly, treats `leakage` as `unknown`, and separates `squeeze` into `dent_or_crush` versus `crushed_corner` using an explicit corner-geometry heuristic because the public source does not provide a direct crushed-corner label.
+
+The separate project-controlled cardboard-box capture remains the final academic-strength evidence task. Detection rectangles/boxes are **not** accepted as segmentation-mask ground truth.
 
 ## Definition of fully final
 
