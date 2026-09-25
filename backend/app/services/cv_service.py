@@ -103,7 +103,13 @@ class CVService:
                 "latency_ms": (perf_counter() - started) * 1000,
             }
 
-        result = model.predict(source=str(absolute), verbose=False, conf=0.20)[0]
+        result = model.predict(
+            source=str(absolute),
+            verbose=False,
+            conf=0.20,
+            imgsz=settings.cv_image_size,
+            device="cpu",
+        )[0]
         findings: list[dict] = []
         if result.masks is not None and result.boxes is not None:
             masks = result.masks.data.cpu().numpy()
