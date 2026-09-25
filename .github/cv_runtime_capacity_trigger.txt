@@ -1,0 +1,1 @@
+2026-09-25 audit current YOLO and OpenCLIP memory against Railway 1 GB limit
