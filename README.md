@@ -12,7 +12,7 @@ ReturnReview is an evidence-first semester project for **Fundamentals of Compute
 
 Both services are isolated inside the dedicated Railway **ReturnReview** project.
 
-> **Current AI status:** Gemini is enabled server-side in Railway with `gemini-3.8-flash` as the production primary and a stable capacity fallback. A real six-case Gemini 3.5 Flash evaluation run has been human-reviewed and its metrics are published in the Evaluation dashboard. Project-specific CV inference remains intentionally unavailable until the real pilot dataset, trained checkpoint, and prototype bank exist; the API refuses to fabricate CV evidence.
+> **Current AI status:** Gemini is enabled server-side in Railway with `gemini-3.8-flash` as the production primary and a stable capacity fallback. A real six-case Gemini 3.5 Flash evaluation run has been human-reviewed. A checksum-verified lightweight CV candidate (`cv-lightweight-1`) has also been trained and evaluated on licensed public data. Its MobileNetV3 category verifier reached 100% accuracy on the 32-image held-out pilot category test, while damage segmentation remains modest (mean IoU 14.1%, Dice 20.0%, mask mAP@50 12.9%). Those limits are reported honestly.
 
 > **Current persistence status:** production persistence is fully verified on dedicated Railway Postgres inside the isolated **ReturnReview** project. Startup reports PostgreSQL with durable persistence enabled, health/readiness pass, and a real case with two evidence images survived an API redeploy. The older Supabase App 13 foundation is retained but is no longer the intended production runtime database.
 
@@ -22,7 +22,7 @@ Both services are isolated inside the dedicated Railway **ReturnReview** project
 - Visible external defects: `tear`, `crushed_corner`, `dent_or_crush`, `unknown`
 - Multi-angle JPEG/PNG/WebP uploads
 - Real binary damage segmentation using a fine-tuned YOLO segmentation checkpoint
-- OpenCLIP category verification and prototype-based few-shot defect recognition
+- MobileNetV3-Small cardboard-box verification + multiclass YOLO defect localization for the production-light path
 - Conservative multi-view evidence aggregation
 - Structured evidence + policy retrieval
 - Gemini tool-calling review agent with deterministic fallback + grounding guard
@@ -53,7 +53,7 @@ Implemented and tested:
 - case creation/history/detail
 - validated 2–4 image upload flow
 - YOLO segmentation adapter
-- OpenCLIP category verification + few-shot adapter
+- lightweight MobileNetV3 category verification + multiclass YOLO defect adapter
 - segmentation-overlay generation
 - structured visual evidence + multi-view aggregation
 - bounded Gemini tool workflow + deterministic fallback
@@ -68,7 +68,7 @@ Implemented and tested:
 - isolated Railway Postgres + persistent database volume
 - database-backed evidence image/overlay support + readiness reporting
 
-**The remaining hard dependency is the real CV pilot/data pipeline; final submission assets and a full real-data E2E rehearsal follow after the CV model is ready.**
+**A real lightweight CV public-pilot candidate now exists and passes the 1 GB Railway capacity gate. The remaining academic-strength dependency is the project-controlled cardboard-box capture; the public-data pilot is kept clearly separate from that final evidence.**
 
 See [`docs/CHECKLIST.md`](docs/CHECKLIST.md).
 
@@ -105,10 +105,9 @@ Copy `.env.example` to `.env` where appropriate. Never commit secrets.
 
 ```text
 image validation
-  -> OpenCLIP category verification
-  -> YOLO11n-seg binary damage localization
-  -> damage-crop embeddings
-  -> few-shot prototype matching
+  -> MobileNetV3-Small cardboard-box verification
+  -> YOLO11n-seg multiclass damage localization
+  -> explicit source-class mapping / corner-geometry heuristic
   -> conservative multi-view aggregation
   -> structured evidence
 ```
@@ -133,7 +132,7 @@ The earlier Supabase **Project Hub App 13** resources remain intact as an inacti
 
 - one product category initially
 - external visible damage only
-- CV checkpoint still requires project-specific labelled data
+- current CV metrics are from licensed public data; the project-controlled capture remains separate final evidence
 - production PostgreSQL persistence is verified across an API redeploy
 - image quality affects confidence
 - unseen/ambiguous defects remain `unknown`
