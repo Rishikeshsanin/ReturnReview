@@ -121,7 +121,7 @@ jobs:
           from app.services.cv_service import cv_service
 
           category_verifier._load()
-          cv_service._model()
+          cv_service._load_yolo()
           ok, probability = category_verifier.verify(Image.new("RGB", (640, 480), "white"))
           print({"category_model_loaded": True, "yolo_model_loaded": True, "sample_probability": probability, "sample_verified": ok})
           PY
