@@ -1,0 +1,183 @@
+name: Production E2E Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/production_smoke_trigger.txt
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      API_BASE: https://returnreview-api-production.up.railway.app
+      WEB_BASE: https://returnreview-web-production.up.railway.app
+      ROBOFLOW_API_KEY: ${{ secrets.ROBOFLOW_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install smoke dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "requests>=2.32,<3" "roboflow>=1.2,<2"
+
+      - name: Verify live health, readiness, metrics, and evaluation page
+        run: |
+          python - <<'PY'
+          import os
+          import requests
+
+          api = os.environ["API_BASE"]
+          web = os.environ["WEB_BASE"]
+
+          def get_json(path):
+              response = requests.get(api + path, timeout=30)
+              print(path, response.status_code, response.text[:1200])
+              response.raise_for_status()
+              return response.json()
+
+          health = get_json("/health")
+          assert health["status"] == "ok"
+          assert health["database_backend"] == "postgresql"
+          assert health["durable_persistence"] is True
+          assert health["llm_enabled"] is True
+          assert health["cv_model_version"] == "cv-lightweight-1"
+
+          readiness = get_json("/readiness")
+          assert readiness["status"] == "ready"
+          assert readiness["database"]["backend"] == "postgresql"
+          assert readiness["database"]["durable"] is True
+          assert readiness["cv_ready"] is True
+          assert readiness["cv_model_version"] == "cv-lightweight-1"
+          assert readiness["llm_ready"] is True
+          assert "validated_cv_artifacts_not_configured" not in readiness["blockers"]
+
+          metrics = get_json("/api/metrics")
+          assert metrics["status"] == "evaluated"
+          assert metrics["scope"] == "llm_review_complete_cv_public_pilot"
+          assert metrics["llm_review"]["evaluation_cases"] == 6
+          cv = metrics["computer_vision"]
+          assert cv["status"] == "evaluated_public_pilot"
+          assert cv["provenance"]["release_tag"] == "cv-lightweight-1"
+          assert cv["runtime"]["railway_fit"]["fits_with_reserve"] is True
+
+          page = requests.get(web + "/evaluation", timeout=30)
+          print("/evaluation", page.status_code, page.text[:1200])
+          page.raise_for_status()
+          assert "Computer vision evaluation" in page.text
+          assert "LLM review evaluation" in page.text
+          PY
+
+      - name: Download two held-out cardboard-box test images
+        run: |
+          if [ -z "$ROBOFLOW_API_KEY" ]; then
+            echo "::error::ROBOFLOW_API_KEY is required for the positive CV smoke case."
+            exit 2
+          fi
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from roboflow import Roboflow
+
+          target = Path("/tmp/returnreview-smoke-source").resolve()
+          rf = Roboflow(api_key=os.environ["ROBOFLOW_API_KEY"])
+          dataset = rf.workspace("tracking-u78ba").project("box-fsrpn").version(16).download(
+              "yolov8", location=str(target), overwrite=True
+          )
+          root = Path(dataset.location).resolve()
+          candidates = sorted((root / "test" / "images").glob("*"))
+          if len(candidates) < 2:
+              raise SystemExit(f"Need at least two held-out test images, found {len(candidates)}")
+          selected = candidates[:2]
+          Path("/tmp/smoke_image_1.txt").write_text(str(selected[0]))
+          Path("/tmp/smoke_image_2.txt").write_text(str(selected[1]))
+          print("selected", selected[0].name, selected[1].name)
+          PY
+
+      - name: Run live CV case smoke
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import requests
+
+          api = os.environ["API_BASE"]
+          run_id = os.environ.get("GITHUB_RUN_ID", "manual")
+          external_id = f"E2E-CV-{run_id}"
+
+          response = requests.post(
+              api + "/api/cases",
+              json={
+                  "external_case_id": external_id,
+                  "product_name": "Automated held-out cardboard-box QA",
+                  "product_category": "cardboard_box",
+                  "customer_reason": "Automated production E2E smoke using held-out licensed public-pilot images.",
+              },
+              timeout=30,
+          )
+          print("create", response.status_code, response.text[:1000])
+          response.raise_for_status()
+          case_id = response.json()["id"]
+
+          paths = [
+              Path("/tmp/smoke_image_1.txt").read_text().strip(),
+              Path("/tmp/smoke_image_2.txt").read_text().strip(),
+          ]
+          for view, path in zip(("front", "back"), paths):
+              with open(path, "rb") as handle:
+                  upload = requests.post(
+                      f"{api}/api/cases/{case_id}/images",
+                      data={"view_label": view},
+                      files={"image": (Path(path).name, handle, "image/jpeg")},
+                      timeout=60,
+                  )
+              print("upload", view, upload.status_code, upload.text[:800])
+              upload.raise_for_status()
+
+          inspect = requests.post(f"{api}/api/cases/{case_id}/inspect", timeout=180)
+          print("inspect", inspect.status_code, inspect.text[:3000])
+          inspect.raise_for_status()
+          payload = inspect.json()
+          evidence = payload["evidence"]
+          assert evidence["category_verified"] is True
+          assert evidence["verification_score"] is not None
+          assert payload["case"]["status"] == "CV_COMPLETE"
+          assert len(payload["images"]) == 2
+
+          # Gemini is a third-party dependency. Exercise it, but preserve a useful
+          # CV smoke result if the provider is temporarily capacity/quota limited.
+          review = requests.post(f"{api}/api/cases/{case_id}/ai-review", timeout=180)
+          print("ai-review", review.status_code, review.text[:3000])
+          if review.ok:
+              review_payload = review.json()
+              assert "recommended_action" in review_payload
+              assert "review_status" in review_payload
+          elif review.status_code not in (429, 500, 502, 503, 504):
+              review.raise_for_status()
+
+          final = requests.get(f"{api}/api/cases/{case_id}", timeout=30)
+          print("final-case", final.status_code, final.text[:3000])
+          final.raise_for_status()
+          final_payload = final.json()
+          assert final_payload["case"]["id"] == case_id
+          assert final_payload["evidence"]["category_verified"] is True
+          assert any(item["event_type"] == "CV_COMPLETED" for item in final_payload["timeline"])
+
+          print(json.dumps({
+              "case_id": case_id,
+              "external_case_id": external_id,
+              "finding_count": len(final_payload["evidence"]["findings"]),
+              "aggregated_defect_count": len(final_payload["evidence"]["aggregated_defects"]),
+              "ai_review_created": final_payload["ai_review"] is not None,
+          }, indent=2))
+          PY
