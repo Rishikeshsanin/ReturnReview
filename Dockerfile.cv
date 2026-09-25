@@ -12,7 +12,9 @@ RUN apt-get update \
 
 COPY backend/requirements.txt /app/backend/requirements.txt
 COPY backend/requirements-cv-light.txt /app/backend/requirements-cv-light.txt
-RUN pip install --upgrade pip && pip install -r /app/backend/requirements-cv-light.txt
+RUN pip install --upgrade pip \
+    && pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.5,<3" "torchvision>=0.20,<1" \
+    && pip install -r /app/backend/requirements-cv-light.txt
 
 COPY backend /app/backend
 COPY data /app/data
