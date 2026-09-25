@@ -5,7 +5,7 @@ import io
 import numpy as np
 from PIL import Image, ImageColor
 from app.utils.config import get_settings
-from app.services.embedding_service import embedding_service, EmbeddingUnavailable
+from app.services.category_verifier import category_verifier, CategoryVerifierUnavailable
 
 settings = get_settings()
 
@@ -15,7 +15,7 @@ class CVUnavailable(RuntimeError):
 
 
 class CVService:
-    """YOLO segmentation + OpenCLIP verification/few-shot classification."""
+    """Lightweight production CV: MobileNet category verification + multiclass YOLO segmentation."""
 
     def __init__(self) -> None:
         self._yolo = None
@@ -30,7 +30,7 @@ class CVService:
             try:
                 from ultralytics import YOLO
             except ImportError as exc:
-                raise CVUnavailable("Install backend/requirements-cv.txt to run CV inference") from exc
+                raise CVUnavailable("Install backend/requirements-cv-light.txt to run CV inference") from exc
             self._yolo = YOLO(str(model_path))
         return self._yolo
 
@@ -61,26 +61,55 @@ class CVService:
         absolute.write_bytes(payload)
         return relative.as_posix(), payload
 
+    @staticmethod
+    def _map_defect_type(
+        source_class: str,
+        bbox: list[float],
+        width: int,
+        height: int,
+    ) -> str:
+        if source_class == "tear":
+            return "tear"
+        if source_class == "leakage":
+            return "unknown"
+        if source_class != "squeeze":
+            return "unknown"
+
+        x1, y1, x2, y2 = bbox
+        cx = ((x1 + x2) / 2.0) / max(width, 1)
+        cy = ((y1 + y2) / 2.0) / max(height, 1)
+        nearest_corner_distance = min(
+            ((cx - corner_x) ** 2 + (cy - corner_y) ** 2) ** 0.5
+            for corner_x, corner_y in ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0))
+        )
+        return "crushed_corner" if nearest_corner_distance <= 0.32 else "dent_or_crush"
+
     def inspect(self, image_path: str, image_id: str, image_blob: bytes | None = None) -> dict:
         started = perf_counter()
         model = self._load_yolo()
         absolute = self._resolve_image(image_path, image_blob)
         image = Image.open(absolute).convert("RGB")
         try:
-            verified, similarity = embedding_service.verify_category(image)
-        except EmbeddingUnavailable as exc:
+            verified, probability = category_verifier.verify(image)
+        except CategoryVerifierUnavailable as exc:
             raise CVUnavailable(str(exc)) from exc
 
         if not verified:
             return {
                 "product_verified": False,
-                "product_similarity": similarity,
+                "product_similarity": probability,
                 "findings": [],
                 "model_version": settings.cv_model_version,
                 "latency_ms": (perf_counter() - started) * 1000,
             }
 
-        result = model.predict(source=str(absolute), verbose=False, conf=0.20)[0]
+        result = model.predict(
+            source=str(absolute),
+            verbose=False,
+            conf=0.20,
+            imgsz=settings.cv_image_size,
+            device="cpu",
+        )[0]
         findings: list[dict] = []
         if result.masks is not None and result.boxes is not None:
             masks = result.masks.data.cpu().numpy()
@@ -89,21 +118,28 @@ class CVService:
                 seg_conf = float(boxes.conf[idx].item()) if boxes.conf is not None else 0.0
                 xyxy = boxes.xyxy[idx].cpu().numpy().astype(float).tolist()
                 x1, y1, x2, y2 = [max(0, int(x)) for x in xyxy]
-                crop = image.crop((x1, y1, max(x1 + 1, x2), max(y1 + 1, y2)))
-                try:
-                    defect_type, class_score, class_scores = embedding_service.classify_damage(crop)
-                except EmbeddingUnavailable as exc:
-                    raise CVUnavailable(str(exc)) from exc
+                class_id = int(boxes.cls[idx].item()) if boxes.cls is not None else -1
+                if isinstance(result.names, dict):
+                    class_name = str(result.names.get(class_id, "unknown"))
+                elif 0 <= class_id < len(result.names):
+                    class_name = str(result.names[class_id])
+                else:
+                    class_name = "unknown"
+                defect_type = self._map_defect_type(
+                    class_name,
+                    xyxy,
+                    image.width,
+                    image.height,
+                )
                 resized = np.asarray(Image.fromarray((mask > 0.5).astype(np.uint8)).resize(image.size))
                 affected = float(np.count_nonzero(resized) / resized.size * 100.0)
                 overlay_path, overlay_blob = self._save_overlay(image, mask, image_id, idx)
                 findings.append({
                     "image_id": image_id,
                     "defect_type": defect_type,
-                    "confidence": min(seg_conf, max(0.0, class_score)),
+                    "confidence": max(0.0, min(1.0, seg_conf)),
                     "segmentation_confidence": seg_conf,
-                    "classification_similarity": class_score,
-                    "class_scores": class_scores,
+                    "source_class": class_name,
                     "bbox": xyxy,
                     "mask_path": overlay_path,
                     "mask_content_type": "image/jpeg",
@@ -113,7 +149,7 @@ class CVService:
 
         return {
             "product_verified": True,
-            "product_similarity": similarity,
+            "product_similarity": probability,
             "findings": findings,
             "model_version": settings.cv_model_version,
             "latency_ms": (perf_counter() - started) * 1000,

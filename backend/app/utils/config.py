@@ -20,9 +20,12 @@ class Settings(BaseSettings):
 
     cv_model_path: str = "./models/checkpoints/best.pt"
     cv_model_version: str = "untrained"
+    cv_image_size: int = 320
     clip_model: str = "ViT-B-32"
     clip_pretrained: str = "laion2b_s34b_b79k"
     prototype_bank_path: str = "./models/prototypes.npz"
+    category_model_path: str = "./models/category_mobilenet_v3_small.pt"
+    category_probability_threshold: float = 0.50
     category_similarity_threshold: float = 0.72
     defect_similarity_threshold: float = 0.66
     defect_margin_threshold: float = 0.03

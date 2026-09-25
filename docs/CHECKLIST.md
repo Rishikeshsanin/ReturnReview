@@ -56,15 +56,14 @@
 - [ ] Collect 24–30 pilot images
 - [ ] Inspect pilot quality/coverage
 - [ ] Annotate pilot damage masks
-- [ ] Train first segmentation checkpoint
-- [ ] Validate generated overlays on unseen images
-- [ ] Build reference prototype bank from training/reference images
-- [ ] Calibrate OpenCLIP category threshold on validation data
-- [ ] Calibrate few-shot similarity + ambiguity thresholds
-- [ ] Decide whether pilot performance justifies expanding to 150–400 images
-- [ ] Train/finalize best checkpoint
-- [ ] Run held-out CV metrics
-- [ ] Package/deploy validated CV artifacts after runtime measurement
+- [x] Train public-pilot segmentation checkpoints
+- [ ] Validate generated overlays on project-controlled unseen images
+- [x] Replace memory-heavy production OpenCLIP path with lightweight MobileNetV3 verification
+- [x] Train/finalize lightweight public-pilot candidate
+- [x] Run held-out public-pilot CV metrics
+- [x] Package checksum-verified CV artifacts after runtime measurement
+- [x] Pass recorded 1 GB Railway runtime-capacity gate
+- [ ] Repeat/validate on project-controlled capture
 
 ## LLM evaluation
 - [x] Fixed LLM evaluation scenario set + schema validator
@@ -92,7 +91,7 @@
 ## Final submission
 - [ ] Full real-data E2E QA
 - [ ] Preload real fallback demo cases
-- [ ] Final evaluation dashboard populated with both LLM and held-out CV metric artifacts
+- [x] Final evaluation dashboard code supports both LLM and held-out CV metric artifacts
 - [ ] Final screenshots
 - [ ] Final report/presentation/demo video
 - [ ] Viva revision

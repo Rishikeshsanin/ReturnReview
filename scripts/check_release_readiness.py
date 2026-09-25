@@ -34,7 +34,7 @@ def main() -> None:
     root = Path(args.root).resolve()
     required_files = {
         "segmentation_checkpoint": root / "backend/models/checkpoints/best.pt",
-        "prototype_bank": root / "backend/models/prototypes.npz",
+        "category_checkpoint": root / "backend/models/category_mobilenet_v3_small.pt",
         "heldout_metrics": root / "artifacts/evaluation/metrics.json",
         "llm_metrics": root / "artifacts/evaluation/llm_metrics.json",
         "llm_eval_set": root / "data/evaluation/llm_eval_cases.jsonl",
@@ -43,7 +43,7 @@ def main() -> None:
     checks = {name: file_state(path) for name, path in required_files.items()}
 
     blockers: list[str] = []
-    for name in ("segmentation_checkpoint", "prototype_bank", "heldout_metrics", "llm_metrics"):
+    for name in ("segmentation_checkpoint", "category_checkpoint", "heldout_metrics", "llm_metrics"):
         if not checks[name]["exists"]:
             blockers.append(f"missing_{name}")
 

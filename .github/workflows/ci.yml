@@ -106,3 +106,22 @@ jobs:
           done
           docker logs returnreview-web
           exit 1
+
+  lightweight-cv-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build checksum-verified lightweight CV image
+        run: docker build -f Dockerfile.cv --build-arg CV_RELEASE_TAG=cv-lightweight-1 -t returnreview-cv .
+      - name: Verify packaged CV models load
+        run: |
+          docker run --rm -i returnreview-cv python - <<'PY'
+          from PIL import Image
+          from app.services.category_verifier import category_verifier
+          from app.services.cv_service import cv_service
+
+          category_verifier._load()
+          cv_service._load_yolo()
+          ok, probability = category_verifier.verify(Image.new("RGB", (640, 480), "white"))
+          print({"category_model_loaded": True, "yolo_model_loaded": True, "sample_probability": probability, "sample_verified": ok})
+          PY

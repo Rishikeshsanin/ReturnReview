@@ -15,6 +15,7 @@ export default async function EvaluationPage(){
   }catch{}
 
   const llm=data?.llm_review;
+  const cv=data?.computer_vision;
 
   return <>
     <div className="eyebrow">Academic evaluation</div>
@@ -25,7 +26,7 @@ export default async function EvaluationPage(){
       <p className="muted">Readiness reports deployment/configuration state. Metrics below come only from real reviewed evaluation artifacts.</p>
       <div className="list">
         <div className="item"><strong>Persistent evidence</strong><div className="muted">{readiness.database?.durable?"Railway Postgres verified across API redeploy":"not enabled in this deployment"}</div></div>
-        <div className="item"><strong>Computer vision</strong><div className="muted">{readiness.cv_ready?"validated artifacts configured":"real trained checkpoint/prototypes still required"}</div></div>
+        <div className="item"><strong>Computer vision</strong><div className="muted">{readiness.cv_ready?`validated lightweight artifacts · ${readiness.cv_model_version}`:"trained artifacts not configured in this deployment"}</div></div>
         <div className="item"><strong>Gemini review</strong><div className="muted">{readiness.llm_ready?`enabled · primary ${readiness.gemini_model}`:"backend Gemini is not enabled"}</div></div>
       </div>
     </div>
@@ -51,9 +52,22 @@ export default async function EvaluationPage(){
     </div>
 
     <div className="card">
-      <div className="section-row"><h2>Computer vision evaluation</h2><span className="pill">pending real model</span></div>
-      <p className="muted">{data?.computer_vision?.message || "Real held-out CV metrics will appear only after dataset collection, mask annotation, training, calibration, and test evaluation."}</p>
-      <p className="muted">No placeholder IoU, Dice, F1, or accuracy values are shown.</p>
+      <div className="section-row"><h2>Computer vision evaluation</h2><span className="pill">{cv?.segmentation?"public pilot evaluated":"pending"}</span></div>
+      {!cv?.segmentation ? <>
+        <p className="muted">{cv?.message || "Real held-out CV metrics will appear after training and evaluation."}</p>
+        <p className="muted">No placeholder IoU, Dice, F1, or accuracy values are shown.</p>
+      </> : <>
+        <p className="muted">These are real held-out metrics from the licensed public-data pilot. They are not presented as project-controlled capture results.</p>
+        <div className="list">
+          <div className="item"><strong>Segmentation mean IoU</strong><div className="muted">{pct(cv.segmentation.mean_iou_all)}</div></div>
+          <div className="item"><strong>Segmentation mean Dice</strong><div className="muted">{pct(cv.segmentation.mean_dice_all)}</div></div>
+          <div className="item"><strong>Mask mAP@50</strong><div className="muted">{pct(cv.segmentation.mask_map50)}</div></div>
+          <div className="item"><strong>Category verification accuracy</strong><div className="muted">{pct(cv.product_verification?.accuracy)}</div></div>
+          <div className="item"><strong>Category F1</strong><div className="muted">{pct(cv.product_verification?.f1)}</div></div>
+          <div className="item"><strong>Measured CV peak RSS</strong><div className="muted">{typeof cv.runtime?.final_peak_rss_mb==="number"?`${cv.runtime.final_peak_rss_mb.toFixed(0)} MB`:"—"}</div></div>
+          <div className="item"><strong>Combined CPU inference</strong><div className="muted">{typeof cv.runtime?.combined_single_image_inference_ms==="number"?`${(cv.runtime.combined_single_image_inference_ms/1000).toFixed(2)} s/image`:"—"}</div></div>
+        </div>
+      </>}
     </div>
   </>;
 }
