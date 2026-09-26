@@ -16,6 +16,8 @@ Both services are isolated inside the dedicated Railway **ReturnReview** project
 
 > **Current persistence status:** production persistence is fully verified on dedicated Railway Postgres inside the isolated **ReturnReview** project. Startup reports PostgreSQL with durable persistence enabled, health/readiness pass, and a real case with two evidence images survived an API redeploy. The older Supabase App 13 foundation is retained but is no longer the intended production runtime database.
 
+> **Current production QA status:** the backend refresh fix is live on Railway application commit `fa15d51cabafd1f2afc02517e9562fc6d383df75`, and production E2E smoke run `36228065797` passed. The live smoke verified health/readiness/metrics, held-out CV inspection, the immediate `/inspect` response, Gemini review, persisted case reload, and the `CV_COMPLETED` audit event. Later GitHub `main` commits only harden the smoke workflow and do not require an API redeploy.
+
 ## MVP scope
 
 - One category: **cardboard shipping boxes**
