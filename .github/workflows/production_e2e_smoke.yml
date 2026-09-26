@@ -157,14 +157,19 @@ jobs:
 
           # Gemini is a third-party dependency. Exercise it, but preserve a useful
           # CV smoke result if the provider is temporarily capacity/quota limited.
-          review = requests.post(f"{api}/api/cases/{case_id}/ai-review", timeout=180)
-          print("ai-review", review.status_code, review.text[:3000])
-          if review.ok:
-              review_payload = review.json()
-              assert "recommended_action" in review_payload
-              assert "review_status" in review_payload
-          elif review.status_code not in (429, 500, 502, 503, 504):
-              review.raise_for_status()
+          try:
+              review = requests.post(f"{api}/api/cases/{case_id}/ai-review", timeout=180)
+              print("ai-review", review.status_code, review.text[:3000])
+              if review.ok:
+                  review_payload = review.json()
+                  assert "recommended_action" in review_payload
+                  assert "review_status" in review_payload
+              elif review.status_code not in (429, 500, 502, 503, 504):
+                  review.raise_for_status()
+          except requests.exceptions.Timeout as exc:
+              print(f"ai-review timed out; continuing CV/persistence smoke: {exc}")
+          except requests.exceptions.ConnectionError as exc:
+              print(f"ai-review connection error; continuing CV/persistence smoke: {exc}")
 
           final = requests.get(f"{api}/api/cases/{case_id}", timeout=30)
           print("final-case", final.status_code, final.text[:3000])
