@@ -132,6 +132,27 @@ The runtime no longer requires OpenCLIP in production. Category verification use
 
 The separate project-controlled cardboard-box capture remains the final academic-strength evidence task. Detection rectangles/boxes are **not** accepted as segmentation-mask ground truth.
 
+## 4. Live production E2E checkpoint — complete
+
+The backend response-refresh fix was deployed to the existing Railway `returnreview-api` service from application commit `fa15d51cabafd1f2afc02517e9562fc6d383df75` and reached `SUCCESS`.
+
+The live production smoke subsequently passed on GitHub Actions run `36228065797`. It verified:
+- `/health` HTTP 200 with PostgreSQL, durable persistence, LLM enabled, and `cv-lightweight-1`
+- `/readiness` HTTP 200 with `cv_ready=true`, `llm_ready=true`, no blockers, and durable PostgreSQL
+- `/api/metrics` HTTP 200 with the reviewed six-case LLM baseline and public-pilot CV artifact
+- the deployed Evaluation page
+- two held-out licensed public-pilot cardboard-box images uploaded into a new QA case
+- immediate `POST /inspect` returned `CV_COMPLETE`, `category_verified=true`, a non-null verification score, two images, and the persisted `CV_COMPLETED` event without requiring a fresh GET
+- live Gemini review completed and the subsequent case GET returned `READY_FOR_REVIEW` with the saved AI review and audit history
+
+The successful QA case was `E2E-CV-36228065797-A1`. This closes the stale immediate-inspection-response production checkpoint.
+
+The smoke harness was also hardened so rerunning a workflow cannot collide with a previously persisted QA case, and third-party Gemini transport timeouts are treated as non-blocking only for the optional AI-review exercise; unexpected HTTP contract failures still fail the smoke.
+
+GitHub `main` may be ahead of the deployed API application SHA because the follow-up commits only changed `.github/**` workflow files. Those paths are outside the API service's Railway watch patterns, so no additional backend redeploy is required for the smoke-harness-only changes.
+
+This is a **production engineering smoke using held-out licensed public-pilot images**. It does not replace the still-pending project-controlled real-box capture, polygon annotation, controlled CV evaluation, or final real-data submission rehearsal.
+
 ## Definition of fully final
 
 ReturnReview is fully final for submission only when all are true:

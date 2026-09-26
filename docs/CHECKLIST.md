@@ -27,6 +27,9 @@
 - [x] LLM/manual evaluation aggregation script
 - [x] Refuse fake CV result when checkpoint is absent
 - [x] GitHub CI: backend tests + frontend build + both container smoke tests
+- [x] Live production E2E smoke passes health/readiness/metrics, held-out CV inspection, Gemini review, persisted case reload, and audit verification
+- [x] Immediate `/inspect` response returns newly persisted CV evidence after the SQLAlchemy refresh fix
+- [x] Production smoke QA IDs are rerun-safe and optional Gemini transport timeouts no longer erase a valid CV/persistence smoke result
 - [x] API/model/security/evaluation/demo/deployment documentation
 - [x] Project Hub rules inspected read-only
 - [x] Required Supabase Hub repo safety-contract files added
