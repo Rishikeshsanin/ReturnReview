@@ -186,3 +186,67 @@ The first human-reviewed run intentionally remains immutable as a baseline. It e
 2. a category-verification failure could preserve the model's `request_more_evidence` action instead of the fixed `insufficient_evidence` contract.
 
 The current code fixes both issues and includes regression tests. The published 2026-09-24 metrics are **not rewritten** after the fix; a future real evaluation run should be used to measure the improved guard/action behavior.
+
+
+## Synthetic-controlled domain-transfer evaluation — 2026-09-27
+
+A separate **synthetic-generated controlled v1** dataset was created for stress-testing and adaptation experiments. It is not genuine camera-captured data and must not be presented as real-world validation.
+
+Dataset protocol:
+- 28 synthetic-generated cardboard-box images
+- 7 normal, 7 tear, 7 crushed-corner, 7 dent/crush
+- fixed box-isolated split: 12 train / 8 validation / 8 test
+- test boxes: B03, B06, B09, B12
+- genuine polygon-style segmentation annotations were created for visible synthetic defects; normal images have empty damage labels
+
+### Existing production candidate on fixed test split
+
+The unchanged `cv-lightweight-1` candidate was evaluated first, with no retraining:
+
+- mean IoU, all 8 test images: 0.042566
+- mean Dice, all 8 test images: 0.075557
+- damaged-only mean IoU: 0.056754
+- damaged-only mean Dice: 0.100743
+- micro pixel precision: 0.077948
+- micro pixel recall: 0.724991
+- mask mAP@50: 0.000000
+- images with no predicted mask: 3/8
+- normal images with false-positive masks: 2/2
+
+MobileNetV3 accepted all 28 positive cardboard-box images, giving positive recall 28/28 = 100%. Because the synthetic-controlled set contains no non-box negatives, specificity and false-accept rate are not measurable from this set.
+
+### Controlled adaptation experiment
+
+One transfer-learning experiment was then run from the same YOLO11n-seg checkpoint using only the fixed train/validation splits:
+- train boxes: B01, B04, B07, B10
+- validation boxes: B02, B05, B08, B11
+- test boxes remained absent from the adaptation train/validation copy and were evaluated once after training
+- AdamW, 320 px, batch 4, seed 20260927
+- first 10 model modules frozen
+- conservative train-only augmentation
+- 27/40 epochs; early stopping with patience 8
+- best checkpoint selected from validation fitness at epoch 19
+- best checkpoint SHA-256: `fabc18ab4b56fa6b85d93761d09db038d0dfe5374a83d33d95984b615491bcac`
+
+Adapted fixed-test metrics:
+- mean IoU, all 8 images: 0.280624
+- mean Dice, all 8 images: 0.299196
+- **damaged-only mean IoU: 0.040832**
+- **damaged-only mean Dice: 0.065594**
+- micro pixel precision: 0.246630
+- micro pixel recall: 0.347407
+- mask mAP@50: 0.064427
+- mask mAP@50:95: 0.008505
+- images with no predicted mask: 7/8
+- normal-image false positives: 0/2
+
+The all-image IoU/Dice values are inflated by the two correctly empty normal images, each of which scores 1.0 for empty-ground-truth/empty-prediction overlap. They must not be interpreted as a broad damage-localization improvement.
+
+On damaged images, overlap worsened relative to the immutable baseline:
+- damaged-only IoU: 0.056754 → 0.040832
+- damaged-only Dice: 0.100743 → 0.065594
+
+Tear and crushed-corner test images were completely missed. Dent/crush had mean IoU 0.122497 across two positive test images. The adapted candidate therefore demonstrates a precision/specificity tradeoff rather than robust segmentation improvement and is **not approved for production deployment**.
+
+The production `cv-lightweight-1` candidate remains unchanged.
+
