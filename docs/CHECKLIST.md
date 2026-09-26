@@ -54,6 +54,10 @@
 - [x] Strict YOLO segmentation export validator
 - [x] Reproducible licensed public-data CV pilot training workflow
 - [x] Semantic OpenCLIP prototype + threshold calibration/evaluation tooling
+- [x] Synthetic-controlled v1: 28 generated images, box-isolated 12/8/8 split, polygon labels, and QA package
+- [x] Evaluate existing `cv-lightweight-1` on fixed synthetic-controlled test split
+- [x] Run one train/validation-only controlled adaptation experiment; preserve untouched test split
+- [x] Reject adapted checkpoint for production after damaged-only overlap worsened and no-mask failures increased
 
 ## Blocked on real project data
 - [ ] Collect 24–30 pilot images

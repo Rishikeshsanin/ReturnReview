@@ -153,6 +153,32 @@ GitHub `main` may be ahead of the deployed API application SHA because the follo
 
 This is a **production engineering smoke using held-out licensed public-pilot images**. It does not replace the still-pending project-controlled real-box capture, polygon annotation, controlled CV evaluation, or final real-data submission rehearsal.
 
+## 5. Synthetic-controlled CV stress test and adaptation — complete
+
+A 28-image **synthetic-generated controlled v1** dataset was built with 7 images per class and a box-isolated 12/8/8 train/validation/test split. It is explicitly synthetic and is not a substitute for genuine-camera evidence.
+
+The unchanged production candidate showed weak transfer on the fixed test split:
+- all-image IoU 0.042566; Dice 0.075557
+- damaged-only IoU 0.056754; Dice 0.100743
+- micro precision 0.077948; recall 0.724991
+- mask mAP@50 0.000000
+- no predicted mask 3/8
+- normal false-positive masks 2/2
+
+A single controlled adaptation experiment used only train/validation boxes and evaluated the untouched test split once. The best checkpoint was selected at validation epoch 19 and has SHA-256 `fabc18ab4b56fa6b85d93761d09db038d0dfe5374a83d33d95984b615491bcac`.
+
+Adapted fixed-test results:
+- all-image IoU 0.280624; Dice 0.299196
+- damaged-only IoU 0.040832; Dice 0.065594
+- micro precision 0.246630; recall 0.347407
+- mask mAP@50 0.064427; mAP@50:95 0.008505
+- no predicted mask 7/8
+- normal false positives 0/2
+
+The all-image means are lifted by correct empty predictions on the two normal test images. Damage-only overlap worsened, tear and crushed-corner remained entirely missed, and the run showed high variance/incipient overfitting. The adapted checkpoint is therefore **not deployment-ready and is not deployed**. Production remains on `cv-lightweight-1`.
+
+This closes the synthetic-controlled experiment phase. Genuine-camera project-controlled validation remains pending if required for the final academic submission.
+
 ## Definition of fully final
 
 ReturnReview is fully final for submission only when all are true:
