@@ -205,9 +205,9 @@ def inspect_case(case_id: str, db: Session = Depends(get_db)):
         case.status = transition(case.status, CaseStatus.CV_COMPLETE.value)
         record_event(db, case.id, "CV_COMPLETED")
         db.commit()
-        # CaseImage.inspection was accessed before inserting CVInspection rows.
-        # SessionLocal uses expire_on_commit=False, so refresh ORM relationships
-        # before serializing the completed inspection response.
+        # CaseImage.inspection may already be cached as None before CVInspection
+        # rows are inserted. SessionLocal uses expire_on_commit=False, so expire
+        # ORM state here to return freshly persisted CV evidence immediately.
         db.expire_all()
     except CVUnavailable as exc:
         case.status = transition(case.status, CaseStatus.READY_FOR_INSPECTION.value)
