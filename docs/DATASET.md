@@ -17,7 +17,17 @@ For each state capture 3–5 views, mixing front/back/side/top as appropriate. U
 Example: `box03_crushedcorner_session1_front_01.jpg`.
 
 ## Annotation
-Polygon-mask only the visible damaged pixels/region. The segmentation dataset uses a single class: `damage`.
+Polygon-mask only the visible damaged pixels/region. Dataset labels must remain
+explicitly tied to the experiment that produced them:
+
+- the original feasibility plan used a binary `damage` class;
+- the deployed public-pilot YOLO model is multiclass with native labels
+  `tear`, `squeeze`, and `leakage`;
+- the project-controlled target taxonomy is `tear`, `crushed_corner`, and
+  `dent_or_crush`, with normal images carrying empty labels.
+
+Do not silently mix these schemas. Any conversion must record the source label
+and mapping used by the target experiment.
 
 ## Leakage rule
 Do not put near-identical images of the same physical box/session into both training and test. Split by physical item/session.
@@ -38,7 +48,7 @@ For a YOLO segmentation export:
 python scripts/validate_yolo_seg_dataset.py /path/to/dataset
 ```
 
-The validator enforces the locked training class map:
+The legacy binary validator enforces the original feasibility class map:
 
 ```text
 0: damage
@@ -81,6 +91,18 @@ treated as a mask.
 
 Public data supplements the project-controlled pilot; it does not remove the
 need for leakage review or held-out evaluation.
+
+## Current controlled-dataset evidence
+
+The completed synthetic-controlled v1 dataset contains 28 synthetic-generated
+images with a fixed box-level split: 12 train, 8 validation, and 8 test. It is
+not genuine camera-captured data and its results remain separate from the
+licensed public-pilot metrics.
+
+The immutable zero-shot `cv-lightweight-1` test evaluation and the later
+train/validation-only adaptation experiment are documented in
+`docs/EVALUATION.md` and `docs/FINALIZATION.md`. The adapted checkpoint was not
+deployed. Genuine-camera validation remains a separate future requirement.
 
 
 ## Automated public-pilot bootstrap

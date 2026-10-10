@@ -12,14 +12,21 @@ ReturnReview deliberately separates perception from reasoning:
 
 ## Runtime architecture
 
+The production API runs the checksum-verified `cv-lightweight-1` release. The
+category gate is a MobileNetV3-Small binary classifier; visible-damage
+localization is a multiclass YOLO11n-seg model with native classes `tear`,
+`squeeze`, and `leakage`. Runtime mapping preserves `tear`, maps `leakage` to
+`unknown`, and maps `squeeze` to `crushed_corner` or `dent_or_crush` using the
+documented corner-distance heuristic. OpenCLIP is not required in production.
+
 ```mermaid
 flowchart TD
   UI[Next.js UI] --> API[FastAPI]
-  API --> CASES[(Case DB)]
-  API --> STORE[Image storage]
+  API --> DB[(Railway PostgreSQL: public schema)]
   API --> CV[CV service]
-  CV --> SEG[YOLO11n-seg: damage mask]
-  CV --> FEW[OpenCLIP: few-shot defect label]
+  CV --> CAT[MobileNetV3-Small: cardboard-box gate]
+  CV --> SEG[Multiclass YOLO11n-seg: damage masks]
+  SEG --> MAP[Runtime defect mapping]
   CV --> EV[Structured evidence]
   API --> POL[Structured policy lookup]
   EV --> AG[Review service]
@@ -29,7 +36,9 @@ flowchart TD
   REV --> UI
   UI --> HUMAN[Human reviewer]
   HUMAN --> API
-  API --> AUDIT[(Audit history)]
+  API --> DB
+  DB --> EV
+  DB --> AUDIT[Audit history]
 ```
 
 ## Safety design
@@ -39,3 +48,19 @@ flowchart TD
 - Database writes are deterministic backend actions, not autonomous model tools.
 - CV inference refuses to claim success if no trained checkpoint exists.
 - Evaluation UI reads persisted metric artifacts and never fabricates numbers.
+
+## Production persistence
+
+Cases, image bytes, CV evidence, overlays, AI reviews, reviewer decisions, and
+audit events are stored in the dedicated Railway PostgreSQL service. The API
+uses the PostgreSQL `public` schema through Railway private networking; the
+database has no public domain. The retained Supabase foundation is historical
+and is not the production runtime.
+
+## Model and metric artifacts
+
+`Dockerfile.cv` downloads `best.pt`,
+`category_mobilenet_v3_small.pt`, and `release_manifest.json` from the
+`cv-lightweight-1` GitHub release. Build-time checksum verification occurs
+before the image is accepted. Canonical, reviewed repository metrics live at
+`data/evaluation/cv_metrics.json` and `data/evaluation/llm_metrics.json`.
