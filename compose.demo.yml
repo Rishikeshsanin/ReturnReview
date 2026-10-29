@@ -56,6 +56,9 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
     restart: unless-stopped
+    environment:
+      # Server-side rendering uses Docker DNS. Browsers still use localhost:8000.
+      RETURNREVIEW_INTERNAL_API_BASE_URL: http://api:8000
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
