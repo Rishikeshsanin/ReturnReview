@@ -98,3 +98,40 @@ def test_daily_quota_primary_uses_fallback_without_hiding_auth_errors(monkeypatc
     assert response == "fallback-response"
     assert model_used == "fallback"
     assert calls == ["primary", "fallback"]
+
+
+def test_bounded_retry_stops_after_one_retry(monkeypatch):
+    calls = []
+
+    class FailingModels:
+        def generate_content(self, *, model, contents, config):
+            calls.append(model)
+            raise DummyError(503)
+
+    class FailingClient:
+        models = FailingModels()
+
+    monkeypatch.setattr(agent_service, "sleep", lambda seconds: None)
+    with pytest.raises(DummyError):
+        agent_service._generate_with_retry(
+            FailingClient(), model="primary", contents="demo", config=None
+        )
+    assert calls == ["primary", "primary"]
+
+
+def test_nontransient_error_does_not_retry(monkeypatch):
+    calls = []
+
+    class FailingModels:
+        def generate_content(self, *, model, contents, config):
+            calls.append(model)
+            raise DummyError(401)
+
+    class FailingClient:
+        models = FailingModels()
+
+    with pytest.raises(DummyError):
+        agent_service._generate_with_retry(
+            FailingClient(), model="primary", contents="demo", config=None
+        )
+    assert calls == ["primary"]

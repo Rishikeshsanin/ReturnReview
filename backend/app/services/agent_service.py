@@ -46,7 +46,11 @@ def _is_capacity_gemini_error(exc: Exception) -> bool:
 
 
 def _generate_with_retry(client, *, model: str, contents: str, config):
-    delays = (0, 2, 5, 10, 20)
+    # The Google SDK also retries by default. When the service is unavailable,
+    # multiplying SDK retries by application retries can stall a classroom demo
+    # for many minutes. The client below disables SDK retries; cap app-level
+    # retries to one prompt retry before trying the fallback model.
+    delays = (0, 1)
     last_error: Exception | None = None
     for attempt, delay in enumerate(delays, start=1):
         if delay:
@@ -139,7 +143,13 @@ def run_review_agent(db: Session, case: ReturnCase) -> tuple[ReviewOutput, dict]
         tool_log.append("get_return_policy")
         return policy.model_dump() if policy else {"policy_found": False}
 
-    client = genai.Client(api_key=settings.gemini_api_key)
+    client = genai.Client(
+        api_key=settings.gemini_api_key,
+        http_options=types.HttpOptions(
+            timeout=30_000,  # per request, milliseconds
+            retry_options=types.HttpRetryOptions(attempts=1),
+        ),
+    )
     started = perf_counter()
     try:
         response, model_used = _generate_with_capacity_fallback(
