@@ -1,0 +1,11 @@
+# COPY THIS FILE TO .env.demo IN THE REPOSITORY ROOT AND EDIT IT.
+# This local password is only for the private Docker PostgreSQL container.
+# Use letters/numbers only to avoid special-character escaping in a database URL.
+RETURNREVIEW_LOCAL_DB_PASSWORD=replace-with-a-unique-alphanumeric-password
+
+# Gemini API key is optional for basic CV flow, but REQUIRED for a real LLM demo.
+# Never commit .env.demo, share its contents, or paste the key into chat.
+RETURNREVIEW_GEMINI_API_KEY=
+RETURNREVIEW_LLM_ENABLED=false
+RETURNREVIEW_GEMINI_MODEL=gemini-3.8-flash
+RETURNREVIEW_GEMINI_FALLBACK_MODEL=gemini-3.5-flash
