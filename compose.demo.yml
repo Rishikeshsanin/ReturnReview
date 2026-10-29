@@ -1,0 +1,66 @@
+name: returnreview-demo
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: returnreview
+      POSTGRES_USER: returnreview
+      POSTGRES_PASSWORD: ${RETURNREVIEW_LOCAL_DB_PASSWORD:?Set RETURNREVIEW_LOCAL_DB_PASSWORD in .env.demo}
+    volumes:
+      - returnreview_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.cv
+    restart: unless-stopped
+    environment:
+      PORT: "8000"
+      RETURNREVIEW_ENV: development
+      RETURNREVIEW_DEMO_MODE: "true"
+      RETURNREVIEW_DATABASE_URL: postgresql+psycopg://returnreview:${RETURNREVIEW_LOCAL_DB_PASSWORD:?Set RETURNREVIEW_LOCAL_DB_PASSWORD in .env.demo}@db:5432/returnreview
+      RETURNREVIEW_DATABASE_SCHEMA: public
+      RETURNREVIEW_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      RETURNREVIEW_CV_MODEL_VERSION: cv-lightweight-1
+      RETURNREVIEW_CV_MODEL_PATH: ./models/checkpoints/best.pt
+      RETURNREVIEW_CATEGORY_MODEL_PATH: ./models/category_mobilenet_v3_small.pt
+      RETURNREVIEW_CV_IMAGE_SIZE: "320"
+      RETURNREVIEW_GEMINI_API_KEY: ${RETURNREVIEW_GEMINI_API_KEY:-}
+      RETURNREVIEW_LLM_ENABLED: ${RETURNREVIEW_LLM_ENABLED:-false}
+      RETURNREVIEW_GEMINI_MODEL: ${RETURNREVIEW_GEMINI_MODEL:-gemini-3.8-flash}
+      RETURNREVIEW_GEMINI_FALLBACK_MODEL: ${RETURNREVIEW_GEMINI_FALLBACK_MODEL:-gemini-3.5-flash}
+      RETURNREVIEW_RUN_LLM_EVAL_ON_START: "false"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 120s
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  returnreview_pg_data:
