@@ -18,14 +18,15 @@ export default async function EvaluationPage(){
   const cv=data?.computer_vision;
 
   return <>
-    <div className="eyebrow">Academic evaluation</div>
+    <div className="eyebrow">Academic evaluation · Evidence, not claims</div>
     <h1>Evaluation dashboard</h1>
+    <p className="muted">Verified historical experiments with documented sample sizes and limitations. This is not a live accuracy benchmark of the current case.</p>
 
     <div className="card" style={{marginBottom:16}}>
       <div className="section-row"><h2>Production readiness</h2><span className="pill">{readiness.status}</span></div>
       <p className="muted">Readiness reports deployment/configuration state. Metrics below come only from real reviewed evaluation artifacts.</p>
       <div className="list">
-        <div className="item"><strong>Persistent evidence</strong><div className="muted">{readiness.database?.durable?"Railway Postgres verified across API redeploy":"not enabled in this deployment"}</div></div>
+        <div className="item"><strong>Persistent evidence</strong><div className="muted">{readiness.database?.durable?"PostgreSQL durable evidence enabled in this environment":"not enabled in this deployment"}</div></div>
         <div className="item"><strong>Computer vision</strong><div className="muted">{readiness.cv_ready?`validated lightweight artifacts · ${readiness.cv_model_version}`:"trained artifacts not configured in this deployment"}</div></div>
         <div className="item"><strong>Gemini review</strong><div className="muted">{readiness.llm_ready?`enabled · primary ${readiness.gemini_model}`:"backend Gemini is not enabled"}</div></div>
       </div>
