@@ -1,0 +1,52 @@
+name: Presentation UX branch validation
+
+on:
+  push:
+    branches:
+      - presentation/working-with-llms-ux-v2
+  workflow_dispatch:
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: npm run build
+
+  isolated-compose-validation:
+    runs-on: ubuntu-latest
+    env:
+      RETURNREVIEW_LOCAL_DB_PASSWORD: presentOnlyCiDemoPass123
+      RETURNREVIEW_GEMINI_API_KEY: ""
+      RETURNREVIEW_LLM_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate separate Compose configuration and port mappings
+        run: |
+          docker compose -f compose.presentation.yml config --quiet
+          docker compose -f compose.presentation.yml config | grep -q "3100"
+          docker compose -f compose.presentation.yml config | grep -q "8100"
+          docker compose -f compose.presentation.yml config | grep -q "returnreview_wllm_pg_data"
+          test -f start-presentation.ps1
+          test -f docs/PRESENTATION_UX.md
+
+  ui-guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check reviewer flow, model labels, and human decision confirmation
+        run: |
+          grep -q "MobileNetV3-Small" frontend/components/CaseClient.tsx
+          grep -q "YOLO11n-seg" frontend/components/CaseClient.tsx
+          grep -q "get_return_policy()" frontend/app/policies/page.tsx
+          grep -q "window.confirm" frontend/components/CaseClient.tsx
+          grep -q "Compare original photos" frontend/components/CaseClient.tsx
+          ! grep -q "OpenCLIP verification" frontend/components/CaseClient.tsx
+          ! grep -q "Binary segmentation + OpenCLIP" frontend/app/page.tsx
