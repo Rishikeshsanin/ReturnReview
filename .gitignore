@@ -34,3 +34,7 @@ Thumbs.db
 # generated evaluation/model artifacts
 artifacts/
 runs/
+
+# Local presentation database backups (never commit)
+*.dump
+*.backup
